@@ -4,6 +4,14 @@ type QuestionRow = {
   finishedAt: Date | null
 }
 
+type StudyBlock = {
+  id: string
+  startTimeValue: string
+  questionCount: number
+  startNumber: number
+  rows: QuestionRow[]
+}
+
 type Trend = {
   color: string
   arrow: 'up' | 'flat' | 'down'
@@ -133,28 +141,37 @@ function createRows(count: number): QuestionRow[] {
   return Array.from({ length: count }, () => ({ finishedAt: null }))
 }
 
-export default function App() {
-  const [startTimeValue, setStartTimeValue] = useState(() =>
-    toTimeInputValue(new Date()),
-  )
-  const [questionCount, setQuestionCount] = useState(10)
-  const [startNumber, setStartNumber] = useState(1)
-  const [rows, setRows] = useState<QuestionRow[]>(() => createRows(10))
+function createStudyBlock(): StudyBlock {
+  return {
+    id: crypto.randomUUID(),
+    startTimeValue: toTimeInputValue(new Date()),
+    questionCount: 10,
+    startNumber: 1,
+    rows: createRows(10),
+  }
+}
 
+function StudyBlockPanel({
+  block,
+  onChange,
+}: {
+  block: StudyBlock
+  onChange: (next: StudyBlock) => void
+}) {
   const startDate = useMemo(
-    () => parseTimeInput(startTimeValue),
-    [startTimeValue],
+    () => parseTimeInput(block.startTimeValue),
+    [block.startTimeValue],
   )
 
   const durations = useMemo(() => {
-    return rows.map((row, index) => {
+    return block.rows.map((row, index) => {
       if (!row.finishedAt || !startDate) return null
       const prev =
-        index === 0 ? startDate : rows[index - 1]?.finishedAt ?? null
+        index === 0 ? startDate : (block.rows[index - 1]?.finishedAt ?? null)
       if (!prev) return null
       return (row.finishedAt.getTime() - prev.getTime()) / 1000
     })
-  }, [rows, startDate])
+  }, [block.rows, startDate])
 
   const answeredCount = durations.filter((d) => d !== null).length
 
@@ -179,173 +196,216 @@ export default function App() {
   }, [averageSeconds, previousAverageSeconds])
 
   const progress =
-    questionCount > 0 ? Math.min(100, (answeredCount / questionCount) * 100) : 0
+    block.questionCount > 0
+      ? Math.min(100, (answeredCount / block.questionCount) * 100)
+      : 0
 
   function handleQuestionCountChange(next: number) {
     const count = Math.max(1, Math.min(200, next || 1))
-    setQuestionCount(count)
-    setRows((prev) => {
-      if (count === prev.length) return prev
-      if (count > prev.length) {
-        return [...prev, ...createRows(count - prev.length)]
-      }
-      return prev.slice(0, count)
-    })
+    const rows =
+      count === block.rows.length
+        ? block.rows
+        : count > block.rows.length
+          ? [...block.rows, ...createRows(count - block.rows.length)]
+          : block.rows.slice(0, count)
+    onChange({ ...block, questionCount: count, rows })
   }
 
   function markFinished(index: number) {
-    setRows((prev) =>
-      prev.map((row, i) =>
+    onChange({
+      ...block,
+      rows: block.rows.map((row, i) =>
         i === index ? { finishedAt: new Date() } : row,
       ),
-    )
+    })
+  }
+
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_20px_50px_-28px_rgba(26,35,50,0.45)]">
+      <div className="h-2 w-full bg-[#e8eef4]">
+        <div
+          className="h-full bg-[var(--accent)] transition-all duration-500 ease-out"
+          style={{ width: `${progress}%` }}
+          role="progressbar"
+          aria-valuenow={Math.round(progress)}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-label="Questions answered progress"
+        />
+      </div>
+
+      <div className="border-b border-[var(--line)] px-5 py-5 sm:px-6">
+        <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+          <label className="flex flex-col gap-1.5 text-left">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+              Started at
+            </span>
+            <input
+              type="time"
+              value={block.startTimeValue}
+              onChange={(e) =>
+                onChange({ ...block, startTimeValue: e.target.value })
+              }
+              className="mono rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 text-base text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+            />
+          </label>
+
+          <label className="flex flex-col gap-1.5 text-left">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+              Questions planned
+            </span>
+            <input
+              type="number"
+              min={1}
+              max={200}
+              value={block.questionCount}
+              onChange={(e) =>
+                handleQuestionCountChange(Number(e.target.value))
+              }
+              className="mono rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 text-base text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+            />
+          </label>
+
+          <div className="flex flex-col gap-1.5 text-left sm:min-w-[10rem]">
+            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+              Avg / question
+            </span>
+            <div
+              className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5"
+              title={trend.label}
+            >
+              <span
+                className="mono text-lg font-semibold tabular-nums"
+                style={{ color: trend.color }}
+              >
+                {averageSeconds === null
+                  ? '--:--'
+                  : formatDuration(averageSeconds)}
+              </span>
+              <span style={{ color: trend.color }} className="shrink-0">
+                <TrendArrow direction={trend.arrow} />
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <p className="mt-3 text-left text-sm text-[var(--muted)]">
+          {answeredCount} of {block.questionCount} answered
+          {averageSeconds !== null && previousAverageSeconds !== null
+            ? ` · trend ${trend.label}`
+            : ''}
+        </p>
+      </div>
+
+      <div className="grid grid-cols-[4.5rem_1fr_6.5rem] gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:grid-cols-[5rem_1fr_7rem] sm:px-6">
+        <span>#</span>
+        <span>Finished</span>
+        <span className="text-right">Took</span>
+      </div>
+
+      <ul className="divide-y divide-[var(--line)]">
+        {block.rows.map((row, index) => {
+          const number = block.startNumber + index
+          const duration = durations[index]
+          const isNext =
+            answeredCount === index &&
+            (index === 0 || block.rows[index - 1]?.finishedAt !== null)
+
+          return (
+            <li
+              key={index}
+              className={`grid grid-cols-[4.5rem_1fr_6.5rem] items-center gap-2 px-5 py-3 sm:grid-cols-[5rem_1fr_7rem] sm:px-6 ${
+                isNext ? 'bg-[var(--accent-soft)]/40' : ''
+              }`}
+            >
+              {index === 0 ? (
+                <input
+                  type="number"
+                  value={block.startNumber}
+                  onChange={(e) =>
+                    onChange({
+                      ...block,
+                      startNumber: Math.max(0, Number(e.target.value) || 0),
+                    })
+                  }
+                  className="mono w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-center text-sm font-medium outline-none ring-[var(--accent)] focus:ring-2"
+                  aria-label="Starting question number"
+                />
+              ) : (
+                <span className="mono text-center text-sm font-medium tabular-nums text-[var(--ink)]">
+                  {number}
+                </span>
+              )}
+
+              <button
+                type="button"
+                onClick={() => markFinished(index)}
+                className={`mono rounded-lg border px-3 py-2 text-left text-sm font-medium transition ${
+                  row.finishedAt
+                    ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
+                    : 'border-dashed border-[var(--line)] bg-white text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
+                }`}
+              >
+                {row.finishedAt ? formatHHMM(row.finishedAt) : 'Tap when done'}
+              </button>
+
+              <span className="mono text-right text-sm tabular-nums text-[var(--ink)]">
+                {duration === null ? '—' : formatDuration(duration)}
+              </span>
+            </li>
+          )
+        })}
+      </ul>
+    </div>
+  )
+}
+
+export default function App() {
+  const [blocks, setBlocks] = useState<StudyBlock[]>(() => [createStudyBlock()])
+
+  function startNewBlock() {
+    // Prepend so newer blocks appear first in the vertical stack.
+    setBlocks((prev) => [createStudyBlock(), ...prev])
+  }
+
+  function updateBlock(id: string, next: StudyBlock) {
+    setBlocks((prev) => prev.map((block) => (block.id === id ? next : block)))
   }
 
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col px-4 py-8 sm:px-6">
-      <header className="mb-6">
-        <p className="text-sm font-medium tracking-wide text-[var(--accent)]">
-          Study session
-        </p>
-        <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--ink)]">
-          Question Timer
-        </h1>
-        <p className="mt-2 max-w-xl text-[var(--muted)]">
-          Set your start time and planned question count, then tap each finish
-          button as you complete a question.
-        </p>
-      </header>
-
-      <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_20px_50px_-28px_rgba(26,35,50,0.45)]">
-        <div className="h-2 w-full bg-[#e8eef4]">
-          <div
-            className="h-full bg-[var(--accent)] transition-all duration-500 ease-out"
-            style={{ width: `${progress}%` }}
-            role="progressbar"
-            aria-valuenow={Math.round(progress)}
-            aria-valuemin={0}
-            aria-valuemax={100}
-            aria-label="Questions answered progress"
-          />
-        </div>
-
-        <div className="border-b border-[var(--line)] px-5 py-5 sm:px-6">
-          <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
-            <label className="flex flex-col gap-1.5 text-left">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                Started at
-              </span>
-              <input
-                type="time"
-                value={startTimeValue}
-                onChange={(e) => setStartTimeValue(e.target.value)}
-                className="mono rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 text-base text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
-              />
-            </label>
-
-            <label className="flex flex-col gap-1.5 text-left">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                Questions planned
-              </span>
-              <input
-                type="number"
-                min={1}
-                max={200}
-                value={questionCount}
-                onChange={(e) =>
-                  handleQuestionCountChange(Number(e.target.value))
-                }
-                className="mono rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 text-base text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
-              />
-            </label>
-
-            <div className="flex flex-col gap-1.5 text-left sm:min-w-[10rem]">
-              <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-                Avg / question
-              </span>
-              <div
-                className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5"
-                title={trend.label}
-              >
-                <span
-                  className="mono text-lg font-semibold tabular-nums"
-                  style={{ color: trend.color }}
-                >
-                  {averageSeconds === null
-                    ? '--:--'
-                    : formatDuration(averageSeconds)}
-                </span>
-                <span style={{ color: trend.color }} className="shrink-0">
-                  <TrendArrow direction={trend.arrow} />
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <p className="mt-3 text-left text-sm text-[var(--muted)]">
-            {answeredCount} of {questionCount} answered
-            {averageSeconds !== null && previousAverageSeconds !== null
-              ? ` · trend ${trend.label}`
-              : ''}
+      <header className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-sm font-medium tracking-wide text-[var(--accent)]">
+            Study session
+          </p>
+          <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--ink)]">
+            Question Timer
+          </h1>
+          <p className="mt-2 max-w-xl text-[var(--muted)]">
+            Set your start time and planned question count, then tap each finish
+            button as you complete a question. Start a new block anytime to track
+            another set below.
           </p>
         </div>
 
-        <div className="grid grid-cols-[4.5rem_1fr_6.5rem] gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:grid-cols-[5rem_1fr_7rem] sm:px-6">
-          <span>#</span>
-          <span>Finished</span>
-          <span className="text-right">Took</span>
-        </div>
+        <button
+          type="button"
+          onClick={startNewBlock}
+          className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+        >
+          New study block
+        </button>
+      </header>
 
-        <ul className="divide-y divide-[var(--line)]">
-          {rows.map((row, index) => {
-            const number = startNumber + index
-            const duration = durations[index]
-            const isNext =
-              answeredCount === index &&
-              (index === 0 || rows[index - 1]?.finishedAt !== null)
-
-            return (
-              <li
-                key={index}
-                className={`grid grid-cols-[4.5rem_1fr_6.5rem] items-center gap-2 px-5 py-3 sm:grid-cols-[5rem_1fr_7rem] sm:px-6 ${
-                  isNext ? 'bg-[var(--accent-soft)]/40' : ''
-                }`}
-              >
-                {index === 0 ? (
-                  <input
-                    type="number"
-                    value={startNumber}
-                    onChange={(e) =>
-                      setStartNumber(Math.max(0, Number(e.target.value) || 0))
-                    }
-                    className="mono w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-center text-sm font-medium outline-none ring-[var(--accent)] focus:ring-2"
-                    aria-label="Starting question number"
-                  />
-                ) : (
-                  <span className="mono text-center text-sm font-medium tabular-nums text-[var(--ink)]">
-                    {number}
-                  </span>
-                )}
-
-                <button
-                  type="button"
-                  onClick={() => markFinished(index)}
-                  className={`mono rounded-lg border px-3 py-2 text-left text-sm font-medium transition ${
-                    row.finishedAt
-                      ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
-                      : 'border-dashed border-[var(--line)] bg-white text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
-                  }`}
-                >
-                  {row.finishedAt ? formatHHMM(row.finishedAt) : 'Tap when done'}
-                </button>
-
-                <span className="mono text-right text-sm tabular-nums text-[var(--ink)]">
-                  {duration === null ? '—' : formatDuration(duration)}
-                </span>
-              </li>
-            )
-          })}
-        </ul>
+      <div className="flex flex-col gap-6">
+        {blocks.map((block) => (
+          <StudyBlockPanel
+            key={block.id}
+            block={block}
+            onChange={(next) => updateBlock(block.id, next)}
+          />
+        ))}
       </div>
     </div>
   )
