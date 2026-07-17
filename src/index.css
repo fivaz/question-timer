@@ -163,6 +163,18 @@ body {
   display: none;
 }
 
+.finished-time-input {
+  height: 1.75rem;
+  min-height: 1.75rem;
+  max-height: 1.75rem;
+}
+
+.finished-time-input::-webkit-date-and-time-value,
+.finished-time-input::-webkit-datetime-edit {
+  height: 1.75rem;
+  line-height: 1.75rem;
+}
+
 @keyframes study-block-enter {
   from {
     opacity: 0;

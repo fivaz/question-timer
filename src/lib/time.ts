@@ -32,3 +32,13 @@ export function parseTimeInput(value: string): Date | null {
 export function toTimeInputValue(date: Date) {
   return `${pad2(date.getHours())}:${pad2(date.getMinutes())}`
 }
+
+/** Apply an `HH:MM` / `HH:MM:SS` time onto an existing date (keeps the calendar day). */
+export function applyTimeToDate(base: Date, timeValue: string): Date | null {
+  if (!timeValue) return null
+  const [h, m, maybeS] = timeValue.split(':').map(Number)
+  if (Number.isNaN(h) || Number.isNaN(m)) return null
+  const next = new Date(base)
+  next.setHours(h, m, Number.isFinite(maybeS) ? maybeS : 0, 0)
+  return next
+}

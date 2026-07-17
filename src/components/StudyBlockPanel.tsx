@@ -2,9 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { AnimationEvent as ReactAnimationEvent } from 'react'
 import { createRows } from '../lib/studyBlock'
 import {
+  applyTimeToDate,
   formatDuration,
   formatHHMM,
   parseTimeInput,
+  toTimeInputValue,
 } from '../lib/time'
 import { getTrend } from '../lib/trend'
 import type { StudyBlock } from '../types'
@@ -31,6 +33,10 @@ export function StudyBlockPanel({
   const rootRef = useRef<HTMLDivElement>(null)
   const blockRef = useRef(block)
   const [skipAnim, setSkipAnim] = useState<SkipAnimation | null>(null)
+  const [editingFinishedId, setEditingFinishedId] = useState<string | null>(
+    null,
+  )
+  const [finishedDraft, setFinishedDraft] = useState('')
 
   blockRef.current = block
 
@@ -136,6 +142,30 @@ export function StudyBlockPanel({
       ...block,
       rows: block.rows.map((row, i) =>
         i === index ? { ...row, finishedAt: new Date() } : row,
+      ),
+    })
+  }
+
+  function beginEditFinished(rowId: string, finishedAt: Date | null) {
+    const base = finishedAt ?? new Date()
+    setFinishedDraft(toTimeInputValue(base))
+    setEditingFinishedId(rowId)
+  }
+
+  function commitFinishedTime(index: number, timeValue: string) {
+    const row = block.rows[index]
+    if (!row) {
+      setEditingFinishedId(null)
+      return
+    }
+    const base = row.finishedAt ?? new Date()
+    const next = applyTimeToDate(base, timeValue)
+    setEditingFinishedId(null)
+    if (!next) return
+    onChange({
+      ...block,
+      rows: block.rows.map((item, i) =>
+        i === index ? { ...item, finishedAt: next } : item,
       ),
     })
   }
@@ -336,17 +366,34 @@ export function StudyBlockPanel({
                 aria-label={`Question number ${row.number}`}
               />
 
-              <button
-                type="button"
-                onClick={() => markFinished(index)}
-                className={`mono justify-self-center rounded-md border px-2.5 py-1 text-center text-xs font-medium tabular-nums transition ${
-                  row.finishedAt
-                    ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
-                    : 'border-dashed border-[var(--line)] bg-[var(--input)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
-                }`}
-              >
-                {row.finishedAt ? formatHHMM(row.finishedAt) : 'Tap when done'}
-              </button>
+              {editingFinishedId === row.id ? (
+                <input
+                  type="time"
+                  autoFocus
+                  value={finishedDraft}
+                  onChange={(e) => setFinishedDraft(e.target.value)}
+                  onBlur={() => commitFinishedTime(index, finishedDraft)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.currentTarget.blur()
+                    }
+                    if (e.key === 'Escape') {
+                      setEditingFinishedId(null)
+                    }
+                  }}
+                  className="time-input finished-time-input mono justify-self-center w-[6.5rem] rounded-md border border-[var(--accent)] bg-[var(--input)] px-1.5 text-center text-xs font-medium tabular-nums text-[var(--accent)] outline-none ring-[var(--accent)] focus:ring-2"
+                  aria-label={`Edit finished time for question ${row.number}`}
+                />
+              ) : (
+                <FinishedButton
+                  finishedAt={row.finishedAt}
+                  questionNumber={row.number}
+                  onTap={() => markFinished(index)}
+                  onLongPress={() =>
+                    beginEditFinished(row.id, row.finishedAt)
+                  }
+                />
+              )}
 
               <span className="mono text-center text-sm tabular-nums text-[var(--ink)]">
                 {duration === null ? '—' : formatDuration(duration)}
@@ -373,6 +420,80 @@ export function StudyBlockPanel({
         })}
       </ul>
     </div>
+  )
+}
+
+function FinishedButton({
+  finishedAt,
+  questionNumber,
+  onTap,
+  onLongPress,
+}: {
+  finishedAt: Date | null
+  questionNumber: number
+  onTap: () => void
+  onLongPress: () => void
+}) {
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const longPressedRef = useRef(false)
+
+  function clearTimer() {
+    if (timerRef.current) {
+      clearTimeout(timerRef.current)
+      timerRef.current = null
+    }
+  }
+
+  function handlePointerDown() {
+    longPressedRef.current = false
+    clearTimer()
+    timerRef.current = setTimeout(() => {
+      longPressedRef.current = true
+      onLongPress()
+    }, 480)
+  }
+
+  function handlePointerUp() {
+    clearTimer()
+  }
+
+  function handleClick() {
+    if (longPressedRef.current) {
+      longPressedRef.current = false
+      return
+    }
+    onTap()
+  }
+
+  useEffect(() => () => clearTimer(), [])
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerLeave={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onContextMenu={(e) => e.preventDefault()}
+      title={
+        finishedAt
+          ? 'Tap to set now · Long-press to edit time'
+          : 'Tap when done · Long-press to enter a time'
+      }
+      aria-label={
+        finishedAt
+          ? `Finished at ${formatHHMM(finishedAt)}. Long-press to edit.`
+          : `Mark question ${questionNumber} finished. Long-press to enter a time.`
+      }
+      className={`mono justify-self-center select-none rounded-md border px-2.5 py-1 text-center text-xs font-medium tabular-nums transition touch-manipulation ${
+        finishedAt
+          ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
+          : 'border-dashed border-[var(--line)] bg-[var(--input)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
+      }`}
+    >
+      {finishedAt ? formatHHMM(finishedAt) : 'Tap when done'}
+    </button>
   )
 }
 
