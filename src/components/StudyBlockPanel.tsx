@@ -1,5 +1,23 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import type { AnimationEvent as ReactAnimationEvent } from 'react'
+import type { AnimationEvent as ReactAnimationEvent, CSSProperties } from 'react'
+import {
+  DndContext,
+  KeyboardSensor,
+  PointerSensor,
+  TouchSensor,
+  closestCenter,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core'
+import {
+  SortableContext,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  useSortable,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { createRows } from '../lib/studyBlock'
 import {
   applyTimeToDate,
@@ -9,8 +27,12 @@ import {
   toTimeInputValue,
 } from '../lib/time'
 import { getTrend } from '../lib/trend'
-import type { StudyBlock } from '../types'
+import type { QuestionRow, StudyBlock } from '../types'
 import { TrendArrow } from './TrendArrow'
+
+const ROW_GRID =
+  'grid grid-cols-[1.75rem_3.5rem_minmax(0,1fr)_3.5rem_2.75rem] items-center gap-1.5 px-3 py-2.5 sm:gap-2 sm:px-5'
+
 
 type StudyBlockPanelProps = {
   block: StudyBlock
@@ -241,6 +263,36 @@ export function StudyBlockPanel({
     }
   }
 
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: { distance: 6 },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 180, tolerance: 8 },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
+  )
+
+  const rowIds = useMemo(() => block.rows.map((row) => row.id), [block.rows])
+
+  function handleDragEnd(event: DragEndEvent) {
+    const { active, over } = event
+    if (!over || active.id === over.id) return
+
+    const oldIndex = block.rows.findIndex((row) => row.id === active.id)
+    const newIndex = block.rows.findIndex((row) => row.id === over.id)
+    if (oldIndex < 0 || newIndex < 0) return
+
+    const nextRows = arrayMove(block.rows, oldIndex, newIndex)
+    onChange({
+      ...block,
+      startNumber: nextRows[0]?.number ?? block.startNumber,
+      rows: nextRows,
+    })
+  }
+
   return (
     <div
       ref={rootRef}
@@ -339,102 +391,229 @@ export function StudyBlockPanel({
         </p>
       </div>
 
-      <div className="grid grid-cols-[3.75rem_minmax(0,1fr)_3.75rem_2.75rem] items-center gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">
+      <div
+        className={`${ROW_GRID} border-b border-[var(--line)] bg-[var(--surface)] text-xs font-semibold uppercase tracking-wider text-[var(--muted)]`}
+        role="row"
+      >
+        <span aria-hidden className="size-7" />
         <span className="text-center">#</span>
         <span className="text-center">Finished</span>
         <span className="text-center">Took</span>
         <span className="text-center">Skip</span>
       </div>
 
-      <ul className="divide-y divide-[var(--line)]">
-        {block.rows.map((row, index) => {
-          const duration = durations[index]
-          const isNext =
-            answeredCount === index &&
-            (index === 0 || block.rows[index - 1]?.finishedAt !== null)
-          const canSkip =
-            !skipAnim &&
-            !row.finishedAt &&
-            index < block.rows.length - 1
-          const skipClass =
-            skipAnim?.id === row.id
-              ? skipAnim.phase === 'out'
-                ? 'question-skip-out'
-                : 'question-skip-in'
-              : ''
+      <DndContext
+        sensors={sensors}
+        collisionDetection={closestCenter}
+        onDragEnd={handleDragEnd}
+      >
+        <SortableContext items={rowIds} strategy={verticalListSortingStrategy}>
+          <ul className="divide-y divide-[var(--line)]">
+            {block.rows.map((row, index) => {
+              const duration = durations[index]
+              const isNext =
+                answeredCount === index &&
+                (index === 0 || block.rows[index - 1]?.finishedAt !== null)
+              const canSkip =
+                !skipAnim &&
+                !row.finishedAt &&
+                index < block.rows.length - 1
+              const skipClass =
+                skipAnim?.id === row.id
+                  ? skipAnim.phase === 'out'
+                    ? 'question-skip-out'
+                    : 'question-skip-in'
+                  : ''
 
-          return (
-            <li
-              key={row.id}
-              onAnimationEnd={(event) => handleRowAnimationEnd(row.id, event)}
-              className={`grid grid-cols-[3.75rem_minmax(0,1fr)_3.75rem_2.75rem] items-center gap-2 px-4 py-2.5 sm:px-6 ${
-                isNext ? 'bg-[var(--accent-soft)]/40' : ''
-              } ${skipClass}`}
-            >
-              <input
-                type="number"
-                value={row.number}
-                onChange={(e) =>
-                  setQuestionNumber(index, Number(e.target.value) || 0)
-                }
-                className="mono w-full rounded-md border border-[var(--line)] bg-[var(--input)] px-2 py-1.5 text-center text-sm font-medium text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
-                aria-label={`Question number ${row.number}`}
-              />
-
-              {editingFinishedId === row.id ? (
-                <input
-                  type="time"
-                  autoFocus
-                  value={finishedDraft}
-                  onChange={(e) => setFinishedDraft(e.target.value)}
-                  onBlur={() => commitFinishedTime(index, finishedDraft)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.currentTarget.blur()
-                    }
-                    if (e.key === 'Escape') {
-                      setEditingFinishedId(null)
-                    }
-                  }}
-                  className="time-input finished-time-input mono justify-self-center w-[6.5rem] rounded-md border border-[var(--accent)] bg-[var(--input)] px-1.5 text-center text-xs font-medium tabular-nums text-[var(--accent)] outline-none ring-[var(--accent)] focus:ring-2"
-                  aria-label={`Edit finished time for question ${row.number}`}
-                />
-              ) : (
-                <FinishedButton
-                  finishedAt={row.finishedAt}
-                  questionNumber={row.number}
-                  onTap={() => markFinished(index)}
-                  onLongPress={() =>
+              return (
+                <SortableQuestionRow
+                  key={row.id}
+                  row={row}
+                  duration={duration}
+                  isNext={isNext}
+                  canSkip={canSkip}
+                  skipClass={skipClass}
+                  dragDisabled={skipAnim !== null}
+                  editingFinished={editingFinishedId === row.id}
+                  finishedDraft={finishedDraft}
+                  onAnimationEnd={(event) =>
+                    handleRowAnimationEnd(row.id, event)
+                  }
+                  onNumberChange={(value) => setQuestionNumber(index, value)}
+                  onMarkFinished={() => markFinished(index)}
+                  onBeginEditFinished={() =>
                     beginEditFinished(row.id, row.finishedAt)
                   }
+                  onFinishedDraftChange={setFinishedDraft}
+                  onCommitFinishedTime={() =>
+                    commitFinishedTime(index, finishedDraft)
+                  }
+                  onCancelFinishedEdit={() => setEditingFinishedId(null)}
+                  onSkip={() => skipQuestion(index)}
                 />
-              )}
-
-              <span className="mono text-center text-sm tabular-nums text-[var(--ink)]">
-                {duration === null ? '—' : formatDuration(duration)}
-              </span>
-
-              <button
-                type="button"
-                onClick={() => skipQuestion(index)}
-                disabled={!canSkip || skipAnim !== null}
-                className="inline-flex size-8 justify-self-center items-center justify-center rounded-md border border-[var(--line)] bg-[var(--input)] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--line)] disabled:hover:text-[var(--muted)]"
-                aria-label={`Skip question ${row.number}`}
-                title={
-                  row.finishedAt
-                    ? 'Already finished'
-                    : canSkip
-                      ? 'Move to end'
-                      : 'Already last'
-                }
-              >
-                <SkipIcon />
-              </button>
-            </li>
-          )
-        })}
-      </ul>
+              )
+            })}
+          </ul>
+        </SortableContext>
+      </DndContext>
     </div>
+  )
+}
+
+type SortableQuestionRowProps = {
+  row: QuestionRow
+  duration: number | null | undefined
+  isNext: boolean
+  canSkip: boolean
+  skipClass: string
+  dragDisabled: boolean
+  editingFinished: boolean
+  finishedDraft: string
+  onAnimationEnd: (event: ReactAnimationEvent<HTMLLIElement>) => void
+  onNumberChange: (value: number) => void
+  onMarkFinished: () => void
+  onBeginEditFinished: () => void
+  onFinishedDraftChange: (value: string) => void
+  onCommitFinishedTime: () => void
+  onCancelFinishedEdit: () => void
+  onSkip: () => void
+}
+
+function SortableQuestionRow({
+  row,
+  duration,
+  isNext,
+  canSkip,
+  skipClass,
+  dragDisabled,
+  editingFinished,
+  finishedDraft,
+  onAnimationEnd,
+  onNumberChange,
+  onMarkFinished,
+  onBeginEditFinished,
+  onFinishedDraftChange,
+  onCommitFinishedTime,
+  onCancelFinishedEdit,
+  onSkip,
+}: SortableQuestionRowProps) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
+    id: row.id,
+    disabled: dragDisabled,
+  })
+
+  const style: CSSProperties = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 2 : undefined,
+    position: isDragging ? 'relative' : undefined,
+    opacity: isDragging ? 0.92 : undefined,
+  }
+
+  return (
+    <li
+      ref={setNodeRef}
+      style={style}
+      onAnimationEnd={onAnimationEnd}
+      className={`${ROW_GRID} ${
+        isNext ? 'bg-[var(--accent-soft)]/40' : ''
+      } ${isDragging ? 'bg-[var(--panel)] shadow-md' : ''} ${skipClass}`}
+    >
+      <button
+        type="button"
+        className="inline-flex size-7 touch-manipulation items-center justify-center rounded-md text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-40"
+        aria-label={`Reorder question ${row.number}`}
+        title="Drag to reorder"
+        disabled={dragDisabled}
+        {...attributes}
+        {...listeners}
+      >
+        <GripIcon />
+      </button>
+
+      <input
+        type="number"
+        value={row.number}
+        onChange={(e) => onNumberChange(Number(e.target.value) || 0)}
+        className="mono w-full rounded-md border border-[var(--line)] bg-[var(--input)] px-2 py-1.5 text-center text-sm font-medium text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+        aria-label={`Question number ${row.number}`}
+      />
+
+      {editingFinished ? (
+        <input
+          type="time"
+          autoFocus
+          value={finishedDraft}
+          onChange={(e) => onFinishedDraftChange(e.target.value)}
+          onBlur={onCommitFinishedTime}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.currentTarget.blur()
+            }
+            if (e.key === 'Escape') {
+              onCancelFinishedEdit()
+            }
+          }}
+          className="time-input finished-time-input mono justify-self-center w-[6.5rem] rounded-md border border-[var(--accent)] bg-[var(--input)] px-1.5 text-center text-xs font-medium tabular-nums text-[var(--accent)] outline-none ring-[var(--accent)] focus:ring-2"
+          aria-label={`Edit finished time for question ${row.number}`}
+        />
+      ) : (
+        <FinishedButton
+          finishedAt={row.finishedAt}
+          questionNumber={row.number}
+          onTap={onMarkFinished}
+          onLongPress={onBeginEditFinished}
+        />
+      )}
+
+      <span className="mono text-center text-sm tabular-nums text-[var(--ink)]">
+        {duration == null ? '—' : formatDuration(duration)}
+      </span>
+
+      <button
+        type="button"
+        onClick={onSkip}
+        disabled={!canSkip || dragDisabled}
+        className="inline-flex size-8 justify-self-center items-center justify-center rounded-md border border-[var(--line)] bg-[var(--input)] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--line)] disabled:hover:text-[var(--muted)]"
+        aria-label={`Skip question ${row.number}`}
+        title={
+          row.finishedAt
+            ? 'Already finished'
+            : canSkip
+              ? 'Move to end'
+              : 'Already last'
+        }
+      >
+        <SkipIcon />
+      </button>
+    </li>
+  )
+}
+
+function GripIcon() {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      aria-hidden
+      className="shrink-0"
+    >
+      <circle cx="5" cy="3.5" r="1.25" />
+      <circle cx="11" cy="3.5" r="1.25" />
+      <circle cx="5" cy="8" r="1.25" />
+      <circle cx="11" cy="8" r="1.25" />
+      <circle cx="5" cy="12.5" r="1.25" />
+      <circle cx="11" cy="12.5" r="1.25" />
+    </svg>
   )
 }
 
