@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useRef } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { AnimationEvent as ReactAnimationEvent } from 'react'
 import { createRows } from '../lib/studyBlock'
 import {
   formatDuration,
@@ -16,6 +17,11 @@ type StudyBlockPanelProps = {
   onExitComplete?: () => void
 }
 
+type SkipAnimation = {
+  id: string
+  phase: 'out' | 'in'
+}
+
 export function StudyBlockPanel({
   block,
   onChange,
@@ -23,6 +29,10 @@ export function StudyBlockPanel({
   onExitComplete,
 }: StudyBlockPanelProps) {
   const rootRef = useRef<HTMLDivElement>(null)
+  const blockRef = useRef(block)
+  const [skipAnim, setSkipAnim] = useState<SkipAnimation | null>(null)
+
+  blockRef.current = block
 
   useEffect(() => {
     if (!block.animateExit) return
@@ -130,22 +140,60 @@ export function StudyBlockPanel({
     })
   }
 
-  function skipQuestion(index: number) {
-    const row = block.rows[index]
-    if (!row || row.finishedAt || index >= block.rows.length - 1) return
+  function commitSkip(rowId: string) {
+    const current = blockRef.current
+    const index = current.rows.findIndex((row) => row.id === rowId)
+    const row = index >= 0 ? current.rows[index] : null
+    if (!row || row.finishedAt || index >= current.rows.length - 1) {
+      setSkipAnim(null)
+      return
+    }
 
-    // Move the row as-is so its question number (and finish time) stay attached.
     const nextRows = [
-      ...block.rows.slice(0, index),
-      ...block.rows.slice(index + 1),
+      ...current.rows.slice(0, index),
+      ...current.rows.slice(index + 1),
       row,
     ]
 
     onChange({
-      ...block,
-      startNumber: nextRows[0]?.number ?? block.startNumber,
+      ...current,
+      startNumber: nextRows[0]?.number ?? current.startNumber,
       rows: nextRows,
     })
+  }
+
+  function skipQuestion(index: number) {
+    const row = block.rows[index]
+    if (!row || row.finishedAt || index >= block.rows.length - 1) return
+    if (skipAnim) return
+
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    if (reducedMotion) {
+      commitSkip(row.id)
+      return
+    }
+
+    setSkipAnim({ id: row.id, phase: 'out' })
+  }
+
+  function handleRowAnimationEnd(
+    rowId: string,
+    event: ReactAnimationEvent<HTMLLIElement>,
+  ) {
+    if (event.target !== event.currentTarget) return
+    if (!skipAnim || skipAnim.id !== rowId) return
+
+    if (skipAnim.phase === 'out' && event.animationName === 'question-skip-out') {
+      commitSkip(rowId)
+      setSkipAnim({ id: rowId, phase: 'in' })
+      return
+    }
+
+    if (skipAnim.phase === 'in' && event.animationName === 'question-skip-in') {
+      setSkipAnim(null)
+    }
   }
 
   return (
@@ -260,14 +308,23 @@ export function StudyBlockPanel({
             answeredCount === index &&
             (index === 0 || block.rows[index - 1]?.finishedAt !== null)
           const canSkip =
-            !row.finishedAt && index < block.rows.length - 1
+            !skipAnim &&
+            !row.finishedAt &&
+            index < block.rows.length - 1
+          const skipClass =
+            skipAnim?.id === row.id
+              ? skipAnim.phase === 'out'
+                ? 'question-skip-out'
+                : 'question-skip-in'
+              : ''
 
           return (
             <li
               key={row.id}
+              onAnimationEnd={(event) => handleRowAnimationEnd(row.id, event)}
               className={`grid grid-cols-[3.75rem_minmax(0,1fr)_3.75rem_2.75rem] items-center gap-2 px-4 py-2.5 sm:px-6 ${
                 isNext ? 'bg-[var(--accent-soft)]/40' : ''
-              }`}
+              } ${skipClass}`}
             >
               <input
                 type="number"
@@ -298,7 +355,7 @@ export function StudyBlockPanel({
               <button
                 type="button"
                 onClick={() => skipQuestion(index)}
-                disabled={!canSkip}
+                disabled={!canSkip || skipAnim !== null}
                 className="inline-flex size-8 justify-self-center items-center justify-center rounded-md border border-[var(--line)] bg-[var(--input)] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--line)] disabled:hover:text-[var(--muted)]"
                 aria-label={`Skip question ${row.number}`}
                 title={
