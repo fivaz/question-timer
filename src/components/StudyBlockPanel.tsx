@@ -149,9 +149,9 @@ export function StudyBlockPanel({
             Delete
           </button>
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <label className="flex flex-col gap-1.5 text-left">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+        <div className="grid grid-cols-3 gap-2">
+          <label className="flex min-w-0 flex-col gap-1 text-left">
+            <span className="truncate text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--muted)]">
               Started at
             </span>
             <input
@@ -160,12 +160,12 @@ export function StudyBlockPanel({
               onChange={(e) =>
                 onChange({ ...block, startTimeValue: e.target.value })
               }
-              className="mono rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 text-base text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+              className="mono w-full min-w-0 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-1.5 py-2 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
 
-          <label className="flex flex-col gap-1.5 text-left">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+          <label className="flex min-w-0 flex-col gap-1 text-left">
+            <span className="truncate text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--muted)]">
               Questions
             </span>
             <input
@@ -176,20 +176,20 @@ export function StudyBlockPanel({
               onChange={(e) =>
                 handleQuestionCountChange(Number(e.target.value))
               }
-              className="mono rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5 text-base text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+              className="mono w-full min-w-0 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-1.5 py-2 text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
 
-          <div className="col-span-2 flex flex-col gap-1.5 text-left">
-            <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-              Avg / question
+          <div className="flex min-w-0 flex-col gap-1 text-left">
+            <span className="truncate text-[0.65rem] font-semibold uppercase tracking-wider text-[var(--muted)]">
+              Avg / q
             </span>
             <div
-              className="flex items-center gap-2 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-3 py-2.5"
+              className="flex min-h-[2.375rem] items-center gap-1 rounded-lg border border-[var(--line)] bg-[var(--surface)] px-1.5 py-2"
               title={trend.label}
             >
               <span
-                className="mono text-lg font-semibold tabular-nums"
+                className="mono min-w-0 truncate text-sm font-semibold tabular-nums"
                 style={{ color: trend.color }}
               >
                 {averageSeconds === null
