@@ -160,7 +160,7 @@ export function StudyBlockPanel({
               onChange={(e) =>
                 onChange({ ...block, startTimeValue: e.target.value })
               }
-              className="time-input mono w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+              className="time-input mono w-full rounded-lg border border-[var(--line)] bg-white px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
 
@@ -176,7 +176,7 @@ export function StudyBlockPanel({
               onChange={(e) =>
                 handleQuestionCountChange(Number(e.target.value))
               }
-              className="mono h-[2.375rem] w-full rounded-lg border border-[var(--line)] bg-[var(--surface)] px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+              className="mono h-[2.375rem] w-full rounded-lg border border-[var(--line)] bg-white px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
 
