@@ -113,6 +113,16 @@ export function StudyBlockPanel({
     })
   }
 
+  function skipQuestion(index: number) {
+    const row = block.rows[index]
+    if (!row || row.finishedAt || index >= block.rows.length - 1) return
+    const nextRows = [...block.rows]
+    const [skipped] = nextRows.splice(index, 1)
+    if (!skipped) return
+    nextRows.push(skipped)
+    onChange({ ...block, rows: nextRows })
+  }
+
   return (
     <div
       ref={rootRef}
@@ -211,10 +221,11 @@ export function StudyBlockPanel({
         </p>
       </div>
 
-      <div className="grid grid-cols-[4.75rem_1fr_4.75rem] items-center gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-6 py-2.5 text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
+      <div className="grid grid-cols-[3.75rem_minmax(0,1fr)_3.75rem_2.75rem] items-center gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:px-6">
         <span className="text-center">#</span>
         <span className="text-center">Finished</span>
         <span className="text-center">Took</span>
+        <span className="text-center">Skip</span>
       </div>
 
       <ul className="divide-y divide-[var(--line)]">
@@ -224,11 +235,13 @@ export function StudyBlockPanel({
           const isNext =
             answeredCount === index &&
             (index === 0 || block.rows[index - 1]?.finishedAt !== null)
+          const canSkip =
+            !row.finishedAt && index < block.rows.length - 1
 
           return (
             <li
               key={index}
-              className={`grid grid-cols-[4.75rem_1fr_4.75rem] items-center gap-2 px-6 py-2.5 ${
+              className={`grid grid-cols-[3.75rem_minmax(0,1fr)_3.75rem_2.75rem] items-center gap-2 px-4 py-2.5 sm:px-6 ${
                 isNext ? 'bg-[var(--accent-soft)]/40' : ''
               }`}
             >
@@ -272,10 +285,53 @@ export function StudyBlockPanel({
               <span className="mono text-center text-sm tabular-nums text-[var(--ink)]">
                 {duration === null ? '—' : formatDuration(duration)}
               </span>
+
+              <button
+                type="button"
+                onClick={() => skipQuestion(index)}
+                disabled={!canSkip}
+                className="inline-flex size-8 justify-self-center items-center justify-center rounded-md border border-[var(--line)] bg-[var(--input)] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--line)] disabled:hover:text-[var(--muted)]"
+                aria-label={`Skip question ${number}`}
+                title={
+                  row.finishedAt
+                    ? 'Already finished'
+                    : canSkip
+                      ? 'Move to end'
+                      : 'Already last'
+                }
+              >
+                <SkipIcon />
+              </button>
             </li>
           )
         })}
       </ul>
     </div>
+  )
+}
+
+function SkipIcon() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="shrink-0"
+    >
+      <path
+        d="M5 4l10 8-10 8V4z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M19 5v14"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+      />
+    </svg>
   )
 }
