@@ -7,7 +7,7 @@ type UndoToastProps = {
 export function UndoToast({ message, onUndo, onDismiss }: UndoToastProps) {
   return (
     <div
-      className="fixed bottom-6 left-1/2 z-50 flex w-[min(100%-2rem,28rem)] -translate-x-1/2 items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--ink)] px-4 py-3 text-sm text-white shadow-[0_16px_40px_-20px_rgba(26,35,50,0.7)]"
+      className="fixed bottom-6 left-1/2 z-50 flex w-[min(100%-2rem,24.875rem)] -translate-x-1/2 items-center justify-between gap-3 rounded-xl border border-[var(--line)] bg-[var(--ink)] px-4 py-3 text-sm text-white shadow-[0_16px_40px_-20px_rgba(26,35,50,0.7)]"
       role="status"
       aria-live="polite"
     >

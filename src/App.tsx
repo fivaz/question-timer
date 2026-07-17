@@ -225,7 +225,7 @@ export default function App() {
 
   if (session.status === 'booting' || session.status === 'loading') {
     return (
-      <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col items-center justify-center gap-3 px-4 py-8 text-[var(--muted)]">
+      <div className="app-shell items-center justify-center gap-3 px-4 py-8 text-[var(--muted)]">
         <p className="text-sm font-medium">
           {session.status === 'booting'
             ? 'Checking sign-in…'
@@ -237,7 +237,7 @@ export default function App() {
 
   if (session.status === 'signedOut') {
     return (
-      <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col items-center justify-center gap-5 px-4 py-8 text-center">
+      <div className="app-shell items-center justify-center gap-5 px-4 py-8 text-center">
         <div>
           <p className="text-sm font-medium tracking-wide text-[var(--accent)]">
             Study session
@@ -245,13 +245,13 @@ export default function App() {
           <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--ink)]">
             Question Timer
           </h1>
-          <p className="mt-2 max-w-md text-[var(--muted)]">
+          <p className="mt-2 text-[var(--muted)]">
             Sign in with Google to save your study blocks in the cloud.
           </p>
         </div>
         <GoogleSignInButton onClick={() => void handleSignIn()} disabled={signingIn} />
         {signInError && (
-          <p className="max-w-md text-sm text-red-600">{signInError}</p>
+          <p className="text-sm text-red-600">{signInError}</p>
         )}
       </div>
     )
@@ -259,12 +259,12 @@ export default function App() {
 
   if (session.status === 'error') {
     return (
-      <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col items-center justify-center gap-3 px-4 py-8 text-center">
+      <div className="app-shell items-center justify-center gap-3 px-4 py-8 text-center">
         <h1 className="text-xl font-semibold text-[var(--ink)]">
           Could not load data
         </h1>
-        <p className="max-w-md text-sm text-[var(--muted)]">{session.message}</p>
-        <p className="max-w-md text-sm text-[var(--muted)]">
+        <p className="text-sm text-[var(--muted)]">{session.message}</p>
+        <p className="text-sm text-[var(--muted)]">
           Check your Firebase config in <code className="mono">.env</code>,
           enable Google sign-in, and apply the Firestore rules from the README.
         </p>
@@ -285,26 +285,28 @@ export default function App() {
   const confirmBlock = blocks.find((block) => block.id === confirmBlockId)
 
   return (
-    <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col px-4 py-8 sm:px-6">
-      <AppHeader
-        onNewBlock={() => void startNewBlock()}
-        userName={user.displayName}
-        userEmail={user.email}
-        onSignOut={() => void handleSignOut()}
-      />
+    <div className="app-shell">
+      <div className="app-shell-scroll flex flex-col px-4 py-6">
+        <AppHeader
+          onNewBlock={() => void startNewBlock()}
+          userName={user.displayName}
+          userEmail={user.email}
+          onSignOut={() => void handleSignOut()}
+        />
 
-      <div className="flex flex-col gap-6">
-        {blocks.map((block) => (
-          <StudyBlockPanel
-            key={block.id}
-            block={block}
-            onChange={(next) => handleBlockChange(block.id, next)}
-            onRequestDelete={() => setConfirmBlockId(block.id)}
-            onExitComplete={
-              block.animateExit ? () => finishExit(block.id) : undefined
-            }
-          />
-        ))}
+        <div className="flex flex-col gap-5 pb-4">
+          {blocks.map((block) => (
+            <StudyBlockPanel
+              key={block.id}
+              block={block}
+              onChange={(next) => handleBlockChange(block.id, next)}
+              onRequestDelete={() => setConfirmBlockId(block.id)}
+              onExitComplete={
+                block.animateExit ? () => finishExit(block.id) : undefined
+              }
+            />
+          ))}
+        </div>
       </div>
 
       <ConfirmDialog

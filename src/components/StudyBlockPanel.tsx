@@ -136,7 +136,7 @@ export function StudyBlockPanel({
         />
       </div>
 
-      <div className="border-b border-[var(--line)] px-5 py-5 sm:px-6">
+      <div className="border-b border-[var(--line)] px-4 py-4">
         <div className="mb-4 flex items-start justify-between gap-3">
           <p className="text-left text-sm font-medium text-[var(--ink)]">
             Study block
@@ -149,7 +149,7 @@ export function StudyBlockPanel({
             Delete
           </button>
         </div>
-        <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
+        <div className="grid grid-cols-2 gap-3">
           <label className="flex flex-col gap-1.5 text-left">
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
               Started at
@@ -166,7 +166,7 @@ export function StudyBlockPanel({
 
           <label className="flex flex-col gap-1.5 text-left">
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
-              Questions planned
+              Questions
             </span>
             <input
               type="number"
@@ -180,7 +180,7 @@ export function StudyBlockPanel({
             />
           </label>
 
-          <div className="flex flex-col gap-1.5 text-left sm:min-w-[10rem]">
+          <div className="col-span-2 flex flex-col gap-1.5 text-left">
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
               Avg / question
             </span>
@@ -211,7 +211,7 @@ export function StudyBlockPanel({
         </p>
       </div>
 
-      <div className="grid grid-cols-[4.5rem_1fr_6.5rem] gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-5 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)] sm:grid-cols-[5rem_1fr_7rem] sm:px-6">
+      <div className="grid grid-cols-[3.5rem_1fr_4.75rem] gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
         <span>#</span>
         <span>Finished</span>
         <span className="text-right">Took</span>
@@ -228,7 +228,7 @@ export function StudyBlockPanel({
           return (
             <li
               key={index}
-              className={`grid grid-cols-[4.5rem_1fr_6.5rem] items-center gap-2 px-5 py-3 sm:grid-cols-[5rem_1fr_7rem] sm:px-6 ${
+              className={`grid grid-cols-[3.5rem_1fr_4.75rem] items-center gap-2 px-4 py-3 ${
                 isNext ? 'bg-[var(--accent-soft)]/40' : ''
               }`}
             >

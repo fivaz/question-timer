@@ -27,7 +27,39 @@ body {
 }
 
 #root {
+  display: flex;
+  justify-content: center;
   min-height: 100svh;
+}
+
+/* Phone-width app column; full-bleed on small screens, framed on larger. */
+.app-shell {
+  display: flex;
+  width: 100%;
+  max-width: 26.875rem; /* 430px — typical large-phone content width */
+  min-height: 100svh;
+  flex-direction: column;
+}
+
+@media (min-width: 30rem) {
+  .app-shell {
+    margin-block: 1rem;
+    min-height: calc(100svh - 2rem);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 1.75rem;
+    background: color-mix(in srgb, var(--panel) 72%, transparent);
+    box-shadow:
+      0 0 0 1px rgb(255 255 255 / 0.55) inset,
+      0 28px 60px -32px rgb(26 35 50 / 0.45);
+  }
+
+  .app-shell-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
 }
 
 .mono {
