@@ -1,11 +1,15 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { AppHeader } from './components/AppHeader'
+import { ConfirmDialog } from './components/ConfirmDialog'
 import { GoogleSignInButton } from './components/GoogleSignInButton'
 import { StudyBlockPanel } from './components/StudyBlockPanel'
+import { UndoToast } from './components/UndoToast'
 import {
   createBlock,
   listBlocks,
+  restoreBlock,
+  softDeleteBlock,
   updateBlock as persistBlock,
 } from './db/studyBlocks'
 import { useDebouncedById } from './hooks/useDebouncedById'
@@ -23,16 +27,28 @@ type SessionState =
   | { status: 'ready'; user: User }
   | { status: 'error'; message: string; user: User | null }
 
+type PendingDelete = {
+  block: StudyBlock
+  index: number
+}
+
+const UNDO_MS = 8000
+
 export default function App() {
   const [blocks, setBlocks] = useState<StudyBlock[]>([])
   const [session, setSession] = useState<SessionState>({ status: 'booting' })
   const [signingIn, setSigningIn] = useState(false)
   const [signInError, setSignInError] = useState<string | null>(null)
+  const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
     return subscribeToAuth((user) => {
       if (!user) {
         setBlocks([])
+        setConfirmBlockId(null)
+        setPendingDelete(null)
         setSession({ status: 'signedOut' })
         return
       }
@@ -70,6 +86,12 @@ export default function App() {
     }
   }, [session])
 
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
+    }
+  }, [])
+
   const saveBlock = useCallback(async (_id: string, block: StudyBlock) => {
     try {
       await persistBlock(block)
@@ -79,6 +101,14 @@ export default function App() {
   }, [])
 
   const debouncedPersist = useDebouncedById(saveBlock, 400)
+
+  function clearUndoToast() {
+    if (undoTimerRef.current) {
+      clearTimeout(undoTimerRef.current)
+      undoTimerRef.current = null
+    }
+    setPendingDelete(null)
+  }
 
   async function handleSignIn() {
     setSigningIn(true)
@@ -95,6 +125,7 @@ export default function App() {
   }
 
   async function handleSignOut() {
+    clearUndoToast()
     try {
       await signOutUser()
     } catch (error) {
@@ -114,6 +145,56 @@ export default function App() {
   function handleBlockChange(id: string, next: StudyBlock) {
     setBlocks((prev) => prev.map((block) => (block.id === id ? next : block)))
     debouncedPersist(id, next)
+  }
+
+  async function confirmDelete() {
+    if (!confirmBlockId) return
+    const index = blocks.findIndex((block) => block.id === confirmBlockId)
+    const block = index >= 0 ? blocks[index] : null
+    setConfirmBlockId(null)
+    if (!block || index < 0) return
+
+    clearUndoToast()
+    setBlocks((prev) => prev.filter((item) => item.id !== block.id))
+    setPendingDelete({ block, index })
+
+    try {
+      await softDeleteBlock(block.id)
+    } catch (error) {
+      console.warn('Failed to soft-delete study block', error)
+      setBlocks((prev) => {
+        const next = [...prev]
+        next.splice(index, 0, block)
+        return next
+      })
+      setPendingDelete(null)
+      return
+    }
+
+    undoTimerRef.current = setTimeout(() => {
+      setPendingDelete(null)
+      undoTimerRef.current = null
+    }, UNDO_MS)
+  }
+
+  async function handleUndo() {
+    if (!pendingDelete) return
+    const { block, index } = pendingDelete
+    clearUndoToast()
+
+    setBlocks((prev) => {
+      const next = [...prev]
+      const insertAt = Math.min(index, next.length)
+      next.splice(insertAt, 0, { ...block, animateEntrance: true })
+      return next
+    })
+
+    try {
+      await restoreBlock(block.id)
+    } catch (error) {
+      console.warn('Failed to restore study block', error)
+      setBlocks((prev) => prev.filter((item) => item.id !== block.id))
+    }
   }
 
   if (session.status === 'booting' || session.status === 'loading') {
@@ -175,6 +256,7 @@ export default function App() {
   }
 
   const { user } = session
+  const confirmBlock = blocks.find((block) => block.id === confirmBlockId)
 
   return (
     <div className="mx-auto flex min-h-svh w-full max-w-3xl flex-col px-4 py-8 sm:px-6">
@@ -191,9 +273,31 @@ export default function App() {
             key={block.id}
             block={block}
             onChange={(next) => handleBlockChange(block.id, next)}
+            onRequestDelete={() => setConfirmBlockId(block.id)}
           />
         ))}
       </div>
+
+      <ConfirmDialog
+        open={confirmBlockId !== null}
+        title="Delete study block?"
+        message={
+          confirmBlock
+            ? `This will remove the block started at ${confirmBlock.startTimeValue} (${confirmBlock.questionCount} questions). You can undo right after.`
+            : 'This will remove the study block. You can undo right after.'
+        }
+        confirmLabel="Delete"
+        onConfirm={() => void confirmDelete()}
+        onCancel={() => setConfirmBlockId(null)}
+      />
+
+      {pendingDelete && (
+        <UndoToast
+          message="Study block deleted."
+          onUndo={() => void handleUndo()}
+          onDismiss={clearUndoToast}
+        />
+      )}
     </div>
   )
 }

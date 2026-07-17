@@ -46,5 +46,9 @@ service cloud.firestore {
 4. Tap **Tap when done** on each row when you finish that question.
 5. Watch the progress bar, per-question duration, and average trend (color + arrow).
 6. Tap **New study block** to start another session (newest first). Changes save automatically.
+7. Tap **Delete** on a block to soft-delete it (confirm first). Use **Undo** in the toast to restore.
+
+Deleted blocks stay in Firestore with a `deletedAt` timestamp and are hidden from the app until restored.
 
 Finish times show as `HH:MM` but are stored with full timestamps for accurate averages.
+

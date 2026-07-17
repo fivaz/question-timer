@@ -12,9 +12,14 @@ import { TrendArrow } from './TrendArrow'
 type StudyBlockPanelProps = {
   block: StudyBlock
   onChange: (next: StudyBlock) => void
+  onRequestDelete: () => void
 }
 
-export function StudyBlockPanel({ block, onChange }: StudyBlockPanelProps) {
+export function StudyBlockPanel({
+  block,
+  onChange,
+  onRequestDelete,
+}: StudyBlockPanelProps) {
   const startDate = useMemo(
     () => parseTimeInput(block.startTimeValue),
     [block.startTimeValue],
@@ -96,6 +101,18 @@ export function StudyBlockPanel({ block, onChange }: StudyBlockPanelProps) {
       </div>
 
       <div className="border-b border-[var(--line)] px-5 py-5 sm:px-6">
+        <div className="mb-4 flex items-start justify-between gap-3">
+          <p className="text-left text-sm font-medium text-[var(--ink)]">
+            Study block
+          </p>
+          <button
+            type="button"
+            onClick={onRequestDelete}
+            className="shrink-0 rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 text-sm font-semibold text-[#b91c1c] transition hover:border-[#fecaca] hover:bg-[#fef2f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b91c1c] focus-visible:ring-offset-2"
+          >
+            Delete
+          </button>
+        </div>
         <div className="grid gap-4 sm:grid-cols-[1fr_1fr_auto] sm:items-end">
           <label className="flex flex-col gap-1.5 text-left">
             <span className="text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">

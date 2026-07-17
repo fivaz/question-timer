@@ -22,6 +22,7 @@ type StudyBlockDoc = {
   questionCount: number
   startNumber: number
   rows: StoredRow[]
+  deletedAt?: unknown | null
 }
 
 function blocksCollection(uid: string) {
@@ -41,23 +42,30 @@ function deserializeRows(rows: StoredRow[] | undefined): QuestionRow[] {
   }))
 }
 
+function isSoftDeleted(data: StudyBlockDoc): boolean {
+  return data.deletedAt != null
+}
+
 export async function listBlocks(): Promise<StudyBlock[]> {
   const user = requireUser()
   const snapshot = await getDocs(
     query(blocksCollection(user.uid), orderBy('createdAt', 'desc')),
   )
 
-  return snapshot.docs.map((document) => {
-    const data = document.data() as StudyBlockDoc
-    return {
-      id: document.id,
-      startTimeValue: data.startTimeValue,
-      questionCount: data.questionCount,
-      startNumber: data.startNumber,
-      rows: deserializeRows(data.rows),
-      animateEntrance: false,
-    }
-  })
+  return snapshot.docs
+    .map((document) => {
+      const data = document.data() as StudyBlockDoc
+      if (isSoftDeleted(data)) return null
+      return {
+        id: document.id,
+        startTimeValue: data.startTimeValue,
+        questionCount: data.questionCount,
+        startNumber: data.startNumber,
+        rows: deserializeRows(data.rows),
+        animateEntrance: false,
+      } satisfies StudyBlock
+    })
+    .filter((block): block is StudyBlock => block !== null)
 }
 
 export async function createBlock(animateEntrance = false): Promise<StudyBlock> {
@@ -70,6 +78,7 @@ export async function createBlock(animateEntrance = false): Promise<StudyBlock> 
     questionCount: block.questionCount,
     startNumber: block.startNumber,
     rows: serializeRows(block.rows),
+    deletedAt: null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   })
@@ -86,6 +95,28 @@ export async function updateBlock(block: StudyBlock): Promise<void> {
     questionCount: block.questionCount,
     startNumber: block.startNumber,
     rows: serializeRows(block.rows),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+/** Soft-delete: sets deletedAt so the block is hidden from listBlocks. */
+export async function softDeleteBlock(blockId: string): Promise<void> {
+  const user = requireUser()
+  const ref = doc(blocksCollection(user.uid), blockId)
+
+  await updateDoc(ref, {
+    deletedAt: serverTimestamp(),
+    updatedAt: serverTimestamp(),
+  })
+}
+
+/** Clears deletedAt so the block appears in listBlocks again. */
+export async function restoreBlock(blockId: string): Promise<void> {
+  const user = requireUser()
+  const ref = doc(blocksCollection(user.uid), blockId)
+
+  await updateDoc(ref, {
+    deletedAt: null,
     updatedAt: serverTimestamp(),
   })
 }
