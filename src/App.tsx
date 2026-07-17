@@ -10,6 +10,7 @@ type StudyBlock = {
   questionCount: number
   startNumber: number
   rows: QuestionRow[]
+  animateEntrance: boolean
 }
 
 type Trend = {
@@ -141,13 +142,14 @@ function createRows(count: number): QuestionRow[] {
   return Array.from({ length: count }, () => ({ finishedAt: null }))
 }
 
-function createStudyBlock(): StudyBlock {
+function createStudyBlock(animateEntrance = false): StudyBlock {
   return {
     id: crypto.randomUUID(),
     startTimeValue: toTimeInputValue(new Date()),
     questionCount: 10,
     startNumber: 1,
     rows: createRows(10),
+    animateEntrance,
   }
 }
 
@@ -221,7 +223,11 @@ function StudyBlockPanel({
   }
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_20px_50px_-28px_rgba(26,35,50,0.45)]">
+    <div
+      className={`overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_20px_50px_-28px_rgba(26,35,50,0.45)] ${
+        block.animateEntrance ? 'study-block-enter' : ''
+      }`}
+    >
       <div className="h-2 w-full bg-[#e8eef4]">
         <div
           className="h-full bg-[var(--accent)] transition-all duration-500 ease-out"
@@ -365,7 +371,7 @@ export default function App() {
 
   function startNewBlock() {
     // Prepend so newer blocks appear first in the vertical stack.
-    setBlocks((prev) => [createStudyBlock(), ...prev])
+    setBlocks((prev) => [createStudyBlock(true), ...prev])
   }
 
   function updateBlock(id: string, next: StudyBlock) {
