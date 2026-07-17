@@ -128,6 +128,21 @@ export function StudyBlockPanel({
 
   function setQuestionNumber(index: number, value: number) {
     const number = Math.max(0, value)
+    const noneFinished = block.rows.every((row) => row.finishedAt === null)
+
+    // Before any finishes are recorded, editing #1 renumbers the whole sequence.
+    if (index === 0 && noneFinished) {
+      onChange({
+        ...block,
+        startNumber: number,
+        rows: block.rows.map((row, i) => ({
+          ...row,
+          number: number + i,
+        })),
+      })
+      return
+    }
+
     onChange({
       ...block,
       startNumber: index === 0 ? number : block.startNumber,
