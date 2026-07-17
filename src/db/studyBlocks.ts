@@ -63,6 +63,7 @@ export async function listBlocks(): Promise<StudyBlock[]> {
         startNumber: data.startNumber,
         rows: deserializeRows(data.rows),
         animateEntrance: false,
+        animateExit: false,
       } satisfies StudyBlock
     })
     .filter((block): block is StudyBlock => block !== null)

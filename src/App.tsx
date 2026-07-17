@@ -42,6 +42,7 @@ export default function App() {
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const exitPendingRef = useRef<PendingDelete | null>(null)
 
   useEffect(() => {
     return subscribeToAuth((user) => {
@@ -49,6 +50,7 @@ export default function App() {
         setBlocks([])
         setConfirmBlockId(null)
         setPendingDelete(null)
+        exitPendingRef.current = null
         setSession({ status: 'signedOut' })
         return
       }
@@ -152,25 +154,45 @@ export default function App() {
     const index = blocks.findIndex((block) => block.id === confirmBlockId)
     const block = index >= 0 ? blocks[index] : null
     setConfirmBlockId(null)
-    if (!block || index < 0) return
+    if (!block || index < 0 || block.animateExit) return
 
     clearUndoToast()
-    setBlocks((prev) => prev.filter((item) => item.id !== block.id))
-    setPendingDelete({ block, index })
+    exitPendingRef.current = { block, index }
+    setBlocks((prev) =>
+      prev.map((item) =>
+        item.id === block.id ? { ...item, animateExit: true } : item,
+      ),
+    )
 
     try {
       await softDeleteBlock(block.id)
     } catch (error) {
       console.warn('Failed to soft-delete study block', error)
-      setBlocks((prev) => {
-        const next = [...prev]
-        next.splice(index, 0, block)
-        return next
-      })
-      setPendingDelete(null)
-      return
+      exitPendingRef.current = null
+      setBlocks((prev) =>
+        prev.map((item) =>
+          item.id === block.id ? { ...item, animateExit: false } : item,
+        ),
+      )
     }
+  }
 
+  function finishExit(blockId: string) {
+    const pending = exitPendingRef.current
+    if (!pending || pending.block.id !== blockId) return
+    exitPendingRef.current = null
+
+    setBlocks((prev) => prev.filter((item) => item.id !== blockId))
+    setPendingDelete({
+      block: {
+        ...pending.block,
+        animateExit: false,
+        animateEntrance: false,
+      },
+      index: pending.index,
+    })
+
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current)
     undoTimerRef.current = setTimeout(() => {
       setPendingDelete(null)
       undoTimerRef.current = null
@@ -185,7 +207,11 @@ export default function App() {
     setBlocks((prev) => {
       const next = [...prev]
       const insertAt = Math.min(index, next.length)
-      next.splice(insertAt, 0, { ...block, animateEntrance: true })
+      next.splice(insertAt, 0, {
+        ...block,
+        animateEntrance: true,
+        animateExit: false,
+      })
       return next
     })
 
@@ -274,6 +300,9 @@ export default function App() {
             block={block}
             onChange={(next) => handleBlockChange(block.id, next)}
             onRequestDelete={() => setConfirmBlockId(block.id)}
+            onExitComplete={
+              block.animateExit ? () => finishExit(block.id) : undefined
+            }
           />
         ))}
       </div>

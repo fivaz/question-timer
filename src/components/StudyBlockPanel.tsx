@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo, useRef } from 'react'
 import { createRows } from '../lib/studyBlock'
 import {
   formatDuration,
@@ -13,13 +13,44 @@ type StudyBlockPanelProps = {
   block: StudyBlock
   onChange: (next: StudyBlock) => void
   onRequestDelete: () => void
+  onExitComplete?: () => void
 }
 
 export function StudyBlockPanel({
   block,
   onChange,
   onRequestDelete,
+  onExitComplete,
 }: StudyBlockPanelProps) {
+  const rootRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!block.animateExit) return
+
+    const node = rootRef.current
+    if (!node) {
+      onExitComplete?.()
+      return
+    }
+
+    const reducedMotion = window.matchMedia(
+      '(prefers-reduced-motion: reduce)',
+    ).matches
+    if (reducedMotion) {
+      onExitComplete?.()
+      return
+    }
+
+    function handleEnd(event: AnimationEvent) {
+      if (event.target !== node) return
+      if (event.animationName !== 'study-block-exit') return
+      onExitComplete?.()
+    }
+
+    node.addEventListener('animationend', handleEnd)
+    return () => node.removeEventListener('animationend', handleEnd)
+  }, [block.animateExit, onExitComplete])
+
   const startDate = useMemo(
     () => parseTimeInput(block.startTimeValue),
     [block.startTimeValue],
@@ -84,8 +115,13 @@ export function StudyBlockPanel({
 
   return (
     <div
+      ref={rootRef}
       className={`overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--panel)] shadow-[0_20px_50px_-28px_rgba(26,35,50,0.45)] ${
-        block.animateEntrance ? 'study-block-enter' : ''
+        block.animateExit
+          ? 'study-block-exit'
+          : block.animateEntrance
+            ? 'study-block-enter'
+            : ''
       }`}
     >
       <div className="h-2 w-full bg-[#e8eef4]">

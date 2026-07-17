@@ -9,6 +9,7 @@ export type StudyBlock = {
   startNumber: number
   rows: QuestionRow[]
   animateEntrance: boolean
+  animateExit: boolean
 }
 
 export type Trend = {

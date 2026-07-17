@@ -13,5 +13,6 @@ export function createStudyBlock(animateEntrance = false): StudyBlock {
     startNumber: 1,
     rows: createRows(10),
     animateEntrance,
+    animateExit: false,
   }
 }
