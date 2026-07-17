@@ -128,19 +128,47 @@ export function StudyBlockPanel({
 
   function handleQuestionCountChange(next: number) {
     const count = Math.max(1, Math.min(200, next || 1))
-    const rows =
-      count === block.rows.length
-        ? block.rows
-        : count > block.rows.length
-          ? [
-              ...block.rows,
-              ...createRows(
-                count - block.rows.length,
-                (block.rows.at(-1)?.number ?? block.startNumber - 1) + 1,
-              ),
-            ]
-          : block.rows.slice(0, count)
-    onChange({ ...block, questionCount: count, rows })
+
+    if (count === block.rows.length) {
+      onChange({ ...block, questionCount: count })
+      return
+    }
+
+    if (count > block.rows.length) {
+      onChange({
+        ...block,
+        questionCount: count,
+        rows: [
+          ...block.rows,
+          ...createRows(
+            count - block.rows.length,
+            (block.rows.at(-1)?.number ?? block.startNumber - 1) + 1,
+          ),
+        ],
+      })
+      return
+    }
+
+    // Shrinking: drop unfinished rows from the end first; never erase timed rows.
+    const nextRows = [...block.rows]
+    while (nextRows.length > count) {
+      let removeAt = -1
+      for (let i = nextRows.length - 1; i >= 0; i--) {
+        if (nextRows[i]?.finishedAt === null) {
+          removeAt = i
+          break
+        }
+      }
+      if (removeAt < 0) break
+      nextRows.splice(removeAt, 1)
+    }
+
+    onChange({
+      ...block,
+      questionCount: nextRows.length,
+      startNumber: nextRows[0]?.number ?? block.startNumber,
+      rows: nextRows,
+    })
   }
 
   function setQuestionNumber(index: number, value: number) {
