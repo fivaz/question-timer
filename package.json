@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite",
     "dev:network": "vite --host --open",
-    "build": "tsc -b && vite build",
+    "build": "pnpm icons && tsc -b && vite build",
+    "icons": "node scripts/generate-icons.mjs",
     "lint": "oxlint",
     "preview": "vite preview"
   },
@@ -22,7 +23,9 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
     "oxlint": "^1.71.0",
+    "sharp": "^0.35.3",
     "tailwindcss": "^4.3.3",
+    "to-ico": "^1.1.5",
     "typescript": "~6.0.2",
     "vite": "^8.1.1"
   }

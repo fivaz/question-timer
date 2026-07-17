@@ -20,9 +20,11 @@ cp .env.example .env
 
 ```bash
 pnpm install
+pnpm icons   # rasterize public/pwa-icon.svg → PNGs + favicon.ico
 pnpm dev
 ```
 
+Edit [`public/pwa-icon.svg`](public/pwa-icon.svg) then run `pnpm icons` whenever the source icon changes. `pnpm build` regenerates icons automatically.
 ### Firestore security rules
 
 Paste these rules in Firestore → Rules (so each signed-in user can only access their own data):
