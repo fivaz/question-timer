@@ -53,7 +53,7 @@ export async function listBlocks(): Promise<StudyBlock[]> {
   )
 
   return snapshot.docs
-    .map((document) => {
+    .map((document): StudyBlock | null => {
       const data = document.data() as StudyBlockDoc
       if (isSoftDeleted(data)) return null
       return {
@@ -64,7 +64,7 @@ export async function listBlocks(): Promise<StudyBlock[]> {
         rows: deserializeRows(data.rows),
         animateEntrance: false,
         animateExit: false,
-      } satisfies StudyBlock
+      }
     })
     .filter((block): block is StudyBlock => block !== null)
 }

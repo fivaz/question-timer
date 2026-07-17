@@ -213,7 +213,7 @@ export function StudyBlockPanel({
 
       <div className="grid grid-cols-[3.5rem_1fr_4.75rem] gap-2 border-b border-[var(--line)] bg-[var(--surface)] px-4 py-2.5 text-left text-xs font-semibold uppercase tracking-wider text-[var(--muted)]">
         <span>#</span>
-        <span>Finished</span>
+        <span className="text-center">Finished</span>
         <span className="text-right">Took</span>
       </div>
 
@@ -228,7 +228,7 @@ export function StudyBlockPanel({
           return (
             <li
               key={index}
-              className={`grid grid-cols-[3.5rem_1fr_4.75rem] items-center gap-2 px-4 py-3 ${
+              className={`grid grid-cols-[3.5rem_1fr_4.75rem] items-center gap-2 px-4 py-2.5 ${
                 isNext ? 'bg-[var(--accent-soft)]/40' : ''
               }`}
             >
@@ -254,7 +254,7 @@ export function StudyBlockPanel({
               <button
                 type="button"
                 onClick={() => markFinished(index)}
-                className={`mono rounded-lg border px-3 py-2 text-left text-sm font-medium transition ${
+                className={`mono justify-self-center rounded-md border px-2.5 py-1 text-center text-xs font-medium tabular-nums transition ${
                   row.finishedAt
                     ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
                     : 'border-dashed border-[var(--line)] bg-white text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
