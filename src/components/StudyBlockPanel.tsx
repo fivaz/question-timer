@@ -41,11 +41,6 @@ type StudyBlockPanelProps = {
   onExitComplete?: () => void
 }
 
-type SkipAnimation = {
-  id: string
-  phase: 'out' | 'in'
-}
-
 export function StudyBlockPanel({
   block,
   onChange,
@@ -54,7 +49,7 @@ export function StudyBlockPanel({
 }: StudyBlockPanelProps) {
   const rootRef = useRef<HTMLDivElement>(null)
   const blockRef = useRef(block)
-  const [skipAnim, setSkipAnim] = useState<SkipAnimation | null>(null)
+  const [exitingRowId, setExitingRowId] = useState<string | null>(null)
   const [editingFinishedId, setEditingFinishedId] = useState<string | null>(
     null,
   )
@@ -207,42 +202,45 @@ export function StudyBlockPanel({
     })
   }
 
-  function commitSkip(rowId: string) {
+  function commitDeleteRow(rowId: string) {
     const current = blockRef.current
-    const index = current.rows.findIndex((row) => row.id === rowId)
-    const row = index >= 0 ? current.rows[index] : null
-    if (!row || row.finishedAt || index >= current.rows.length - 1) {
-      setSkipAnim(null)
+    if (current.rows.length <= 1) {
+      setExitingRowId(null)
       return
     }
 
-    const nextRows = [
-      ...current.rows.slice(0, index),
-      ...current.rows.slice(index + 1),
-      row,
-    ]
+    const nextRows = current.rows.filter((row) => row.id !== rowId)
+    if (nextRows.length === current.rows.length) {
+      setExitingRowId(null)
+      return
+    }
 
+    if (editingFinishedId === rowId) {
+      setEditingFinishedId(null)
+    }
+
+    setExitingRowId(null)
     onChange({
       ...current,
+      questionCount: nextRows.length,
       startNumber: nextRows[0]?.number ?? current.startNumber,
       rows: nextRows,
     })
   }
 
-  function skipQuestion(index: number) {
+  function deleteQuestion(index: number) {
     const row = block.rows[index]
-    if (!row || row.finishedAt || index >= block.rows.length - 1) return
-    if (skipAnim) return
+    if (!row || block.rows.length <= 1 || exitingRowId) return
 
     const reducedMotion = window.matchMedia(
       '(prefers-reduced-motion: reduce)',
     ).matches
     if (reducedMotion) {
-      commitSkip(row.id)
+      commitDeleteRow(row.id)
       return
     }
 
-    setSkipAnim({ id: row.id, phase: 'out' })
+    setExitingRowId(row.id)
   }
 
   function handleRowAnimationEnd(
@@ -250,17 +248,9 @@ export function StudyBlockPanel({
     event: ReactAnimationEvent<HTMLLIElement>,
   ) {
     if (event.target !== event.currentTarget) return
-    if (!skipAnim || skipAnim.id !== rowId) return
-
-    if (skipAnim.phase === 'out' && event.animationName === 'question-skip-out') {
-      commitSkip(rowId)
-      setSkipAnim({ id: rowId, phase: 'in' })
-      return
-    }
-
-    if (skipAnim.phase === 'in' && event.animationName === 'question-skip-in') {
-      setSkipAnim(null)
-    }
+    if (exitingRowId !== rowId) return
+    if (event.animationName !== 'question-row-exit') return
+    commitDeleteRow(rowId)
   }
 
   const sensors = useSensors(
@@ -399,7 +389,7 @@ export function StudyBlockPanel({
         <span className="text-center">#</span>
         <span className="text-center">Finished</span>
         <span className="text-center">Took</span>
-        <span className="text-center">Skip</span>
+        <span aria-hidden className="size-8" />
       </div>
 
       <DndContext
@@ -414,16 +404,10 @@ export function StudyBlockPanel({
               const isNext =
                 answeredCount === index &&
                 (index === 0 || block.rows[index - 1]?.finishedAt !== null)
-              const canSkip =
-                !skipAnim &&
-                !row.finishedAt &&
-                index < block.rows.length - 1
-              const skipClass =
-                skipAnim?.id === row.id
-                  ? skipAnim.phase === 'out'
-                    ? 'question-skip-out'
-                    : 'question-skip-in'
-                  : ''
+              const canDelete =
+                !exitingRowId && block.rows.length > 1
+              const exitClass =
+                exitingRowId === row.id ? 'question-row-exit' : ''
 
               return (
                 <SortableQuestionRow
@@ -431,9 +415,9 @@ export function StudyBlockPanel({
                   row={row}
                   duration={duration}
                   isNext={isNext}
-                  canSkip={canSkip}
-                  skipClass={skipClass}
-                  dragDisabled={skipAnim !== null}
+                  canDelete={canDelete}
+                  exitClass={exitClass}
+                  dragDisabled={exitingRowId !== null}
                   editingFinished={editingFinishedId === row.id}
                   finishedDraft={finishedDraft}
                   onAnimationEnd={(event) =>
@@ -449,7 +433,7 @@ export function StudyBlockPanel({
                     commitFinishedTime(index, finishedDraft)
                   }
                   onCancelFinishedEdit={() => setEditingFinishedId(null)}
-                  onSkip={() => skipQuestion(index)}
+                  onDelete={() => deleteQuestion(index)}
                 />
               )
             })}
@@ -464,8 +448,8 @@ type SortableQuestionRowProps = {
   row: QuestionRow
   duration: number | null | undefined
   isNext: boolean
-  canSkip: boolean
-  skipClass: string
+  canDelete: boolean
+  exitClass: string
   dragDisabled: boolean
   editingFinished: boolean
   finishedDraft: string
@@ -476,15 +460,15 @@ type SortableQuestionRowProps = {
   onFinishedDraftChange: (value: string) => void
   onCommitFinishedTime: () => void
   onCancelFinishedEdit: () => void
-  onSkip: () => void
+  onDelete: () => void
 }
 
 function SortableQuestionRow({
   row,
   duration,
   isNext,
-  canSkip,
-  skipClass,
+  canDelete,
+  exitClass,
   dragDisabled,
   editingFinished,
   finishedDraft,
@@ -495,7 +479,7 @@ function SortableQuestionRow({
   onFinishedDraftChange,
   onCommitFinishedTime,
   onCancelFinishedEdit,
-  onSkip,
+  onDelete,
 }: SortableQuestionRowProps) {
   const {
     attributes,
@@ -524,7 +508,7 @@ function SortableQuestionRow({
       onAnimationEnd={onAnimationEnd}
       className={`${ROW_GRID} ${
         isNext ? 'bg-[var(--accent-soft)]/40' : ''
-      } ${isDragging ? 'bg-[var(--panel)] shadow-md' : ''} ${skipClass}`}
+      } ${isDragging ? 'bg-[var(--panel)] shadow-md' : ''} ${exitClass}`}
     >
       <button
         type="button"
@@ -579,19 +563,13 @@ function SortableQuestionRow({
 
       <button
         type="button"
-        onClick={onSkip}
-        disabled={!canSkip || dragDisabled}
-        className="inline-flex size-8 justify-self-center items-center justify-center rounded-md border border-[var(--line)] bg-[var(--input)] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--line)] disabled:hover:text-[var(--muted)]"
-        aria-label={`Skip question ${row.number}`}
-        title={
-          row.finishedAt
-            ? 'Already finished'
-            : canSkip
-              ? 'Move to end'
-              : 'Already last'
-        }
+        onClick={onDelete}
+        disabled={!canDelete || dragDisabled}
+        className="inline-flex size-8 justify-self-center items-center justify-center rounded-md text-[var(--muted)] transition hover:bg-[var(--danger-soft)] hover:text-[var(--danger)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-[var(--muted)]"
+        aria-label={`Delete question ${row.number}`}
+        title={canDelete ? 'Delete question' : 'Keep at least one question'}
       >
-        <SkipIcon />
+        <CloseIcon />
       </button>
     </li>
   )
@@ -691,24 +669,18 @@ function FinishedButton({
   )
 }
 
-function SkipIcon() {
+function CloseIcon() {
   return (
     <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
+      width="14"
+      height="14"
+      viewBox="0 0 16 16"
       fill="none"
       aria-hidden
       className="shrink-0"
     >
       <path
-        d="M5 4l10 8-10 8V4z"
-        stroke="currentColor"
-        strokeWidth="1.75"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M19 5v14"
+        d="M4 4l8 8M12 4l-8 8"
         stroke="currentColor"
         strokeWidth="1.75"
         strokeLinecap="round"
