@@ -66,6 +66,67 @@ body {
   font-family: 'IBM Plex Mono', monospace;
 }
 
+/*
+  iOS Safari sizes native type="time" much taller/wider than text inputs.
+  Force the same box as neighboring fields and vertically center the value.
+*/
+.time-input {
+  appearance: none;
+  -webkit-appearance: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.375rem;
+  min-height: 2.375rem;
+  max-height: 2.375rem;
+  line-height: normal;
+  overflow: hidden;
+  padding-block: 0;
+  text-align: center;
+}
+
+.time-input::-webkit-date-and-time-value {
+  text-align: center;
+  margin: 0 auto;
+  padding: 0;
+  line-height: 2.375rem;
+  height: 2.375rem;
+  width: 100%;
+}
+
+.time-input::-webkit-datetime-edit {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  margin: 0 auto;
+  height: 2.375rem;
+  line-height: 2.375rem;
+  text-align: center;
+  width: 100%;
+}
+
+.time-input::-webkit-datetime-edit-fields-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  height: 100%;
+  width: 100%;
+}
+
+.time-input::-webkit-datetime-edit-text,
+.time-input::-webkit-datetime-edit-hour-field,
+.time-input::-webkit-datetime-edit-minute-field,
+.time-input::-webkit-datetime-edit-ampm-field {
+  padding: 0;
+  margin: 0;
+}
+
+.time-input::-webkit-calendar-picker-indicator {
+  display: none;
+}
+
 @keyframes study-block-enter {
   from {
     opacity: 0;
