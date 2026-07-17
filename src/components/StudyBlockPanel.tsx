@@ -99,16 +99,33 @@ export function StudyBlockPanel({
       count === block.rows.length
         ? block.rows
         : count > block.rows.length
-          ? [...block.rows, ...createRows(count - block.rows.length)]
+          ? [
+              ...block.rows,
+              ...createRows(
+                count - block.rows.length,
+                (block.rows.at(-1)?.number ?? block.startNumber - 1) + 1,
+              ),
+            ]
           : block.rows.slice(0, count)
     onChange({ ...block, questionCount: count, rows })
+  }
+
+  function setQuestionNumber(index: number, value: number) {
+    const number = Math.max(0, value)
+    onChange({
+      ...block,
+      startNumber: index === 0 ? number : block.startNumber,
+      rows: block.rows.map((row, i) =>
+        i === index ? { ...row, number } : row,
+      ),
+    })
   }
 
   function markFinished(index: number) {
     onChange({
       ...block,
       rows: block.rows.map((row, i) =>
-        i === index ? { finishedAt: new Date() } : row,
+        i === index ? { ...row, finishedAt: new Date() } : row,
       ),
     })
   }
@@ -230,7 +247,6 @@ export function StudyBlockPanel({
 
       <ul className="divide-y divide-[var(--line)]">
         {block.rows.map((row, index) => {
-          const number = block.startNumber + index
           const duration = durations[index]
           const isNext =
             answeredCount === index &&
@@ -245,30 +261,15 @@ export function StudyBlockPanel({
                 isNext ? 'bg-[var(--accent-soft)]/40' : ''
               }`}
             >
-              {index === 0 ? (
-                <input
-                  type="number"
-                  value={block.startNumber}
-                  onChange={(e) =>
-                    onChange({
-                      ...block,
-                      startNumber: Math.max(0, Number(e.target.value) || 0),
-                    })
-                  }
-                  className="mono w-full rounded-md border border-[var(--line)] bg-[var(--input)] px-2 py-1.5 text-center text-sm font-medium text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
-                  aria-label="Starting question number"
-                />
-              ) : (
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  value={number}
-                  readOnly
-                  tabIndex={-1}
-                  aria-label={`Question number ${number}`}
-                  className="mono w-full cursor-default rounded-md border border-[var(--line)] bg-[var(--surface)] px-2 py-1.5 text-center text-sm font-medium tabular-nums text-[var(--muted)] outline-none"
-                />
-              )}
+              <input
+                type="number"
+                value={row.number}
+                onChange={(e) =>
+                  setQuestionNumber(index, Number(e.target.value) || 0)
+                }
+                className="mono w-full rounded-md border border-[var(--line)] bg-[var(--input)] px-2 py-1.5 text-center text-sm font-medium text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                aria-label={`Question number ${row.number}`}
+              />
 
               <button
                 type="button"
@@ -291,7 +292,7 @@ export function StudyBlockPanel({
                 onClick={() => skipQuestion(index)}
                 disabled={!canSkip}
                 className="inline-flex size-8 justify-self-center items-center justify-center rounded-md border border-[var(--line)] bg-[var(--input)] text-[var(--muted)] transition hover:border-[var(--accent)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--line)] disabled:hover:text-[var(--muted)]"
-                aria-label={`Skip question ${number}`}
+                aria-label={`Skip question ${row.number}`}
                 title={
                   row.finishedAt
                     ? 'Already finished'

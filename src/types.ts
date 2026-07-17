@@ -1,4 +1,5 @@
 export type QuestionRow = {
+  number: number
   finishedAt: Date | null
 }
 

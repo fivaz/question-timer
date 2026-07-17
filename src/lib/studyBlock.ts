@@ -1,8 +1,11 @@
 import type { QuestionRow, StudyBlock } from '../types'
 import { toTimeInputValue } from './time'
 
-export function createRows(count: number): QuestionRow[] {
-  return Array.from({ length: count }, () => ({ finishedAt: null }))
+export function createRows(count: number, startNumber = 1): QuestionRow[] {
+  return Array.from({ length: count }, (_, index) => ({
+    number: startNumber + index,
+    finishedAt: null,
+  }))
 }
 
 /** Prefer randomUUID; fall back when not in a secure context (e.g. LAN http://192.168.x.x). */
@@ -26,7 +29,7 @@ export function createStudyBlock(animateEntrance = false): StudyBlock {
     startTimeValue: toTimeInputValue(new Date()),
     questionCount: 10,
     startNumber: 1,
-    rows: createRows(10),
+    rows: createRows(10, 1),
     animateEntrance,
     animateExit: false,
   }

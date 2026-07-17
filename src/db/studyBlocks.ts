@@ -14,6 +14,7 @@ import { getFirestoreDb } from '../lib/firebase'
 import type { QuestionRow, StudyBlock } from '../types'
 
 type StoredRow = {
+  number?: number
   finishedAt: string | null
 }
 
@@ -31,13 +32,21 @@ function blocksCollection(uid: string) {
 
 function serializeRows(rows: QuestionRow[]): StoredRow[] {
   return rows.map((row) => ({
+    number: row.number,
     finishedAt: row.finishedAt ? row.finishedAt.toISOString() : null,
   }))
 }
 
-function deserializeRows(rows: StoredRow[] | undefined): QuestionRow[] {
+function deserializeRows(
+  rows: StoredRow[] | undefined,
+  startNumber: number,
+): QuestionRow[] {
   if (!rows) return []
-  return rows.map((row) => ({
+  return rows.map((row, index) => ({
+    number:
+      typeof row.number === 'number' && Number.isFinite(row.number)
+        ? row.number
+        : startNumber + index,
     finishedAt: row.finishedAt ? new Date(row.finishedAt) : null,
   }))
 }
@@ -61,7 +70,7 @@ export async function listBlocks(): Promise<StudyBlock[]> {
         startTimeValue: data.startTimeValue,
         questionCount: data.questionCount,
         startNumber: data.startNumber,
-        rows: deserializeRows(data.rows),
+        rows: deserializeRows(data.rows, data.startNumber),
         animateEntrance: false,
         animateExit: false,
       }
