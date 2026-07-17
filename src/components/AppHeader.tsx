@@ -1,8 +1,13 @@
+import { ThemeModeMenu } from './ThemeModeMenu'
+import type { ThemeMode } from '../lib/theme'
+
 type AppHeaderProps = {
   onNewBlock: () => void
   userName: string | null
   userEmail: string | null
   onSignOut: () => void
+  themeMode: ThemeMode
+  onThemeModeChange: (mode: ThemeMode) => void
 }
 
 export function AppHeader({
@@ -10,6 +15,8 @@ export function AppHeader({
   userName,
   userEmail,
   onSignOut,
+  themeMode,
+  onThemeModeChange,
 }: AppHeaderProps) {
   return (
     <header className="mb-5 flex flex-col gap-4">
@@ -18,19 +25,22 @@ export function AppHeader({
           <p className="text-sm font-medium tracking-wide text-[var(--accent)]">
             Study session
           </p>
-          <button
-            type="button"
-            onClick={onSignOut}
-            className="inline-flex size-8 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-white/70 hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
-            aria-label="Sign out"
-            title={
-              userName || userEmail
-                ? `Sign out (${userName ?? userEmail})`
-                : 'Sign out'
-            }
-          >
-            <LogoutIcon />
-          </button>
+          <div className="flex items-center gap-0.5">
+            <ThemeModeMenu mode={themeMode} onChange={onThemeModeChange} />
+            <button
+              type="button"
+              onClick={onSignOut}
+              className="inline-flex size-8 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)]"
+              aria-label="Sign out"
+              title={
+                userName || userEmail
+                  ? `Sign out (${userName ?? userEmail})`
+                  : 'Sign out'
+              }
+            >
+              <LogoutIcon />
+            </button>
+          </div>
         </div>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight text-[var(--ink)]">
           Question Timer
@@ -45,7 +55,7 @@ export function AppHeader({
       <button
         type="button"
         onClick={onNewBlock}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-contrast)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)]"
       >
         <PlusIcon />
         Study block

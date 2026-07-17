@@ -144,7 +144,7 @@ export function StudyBlockPanel({
           <button
             type="button"
             onClick={onRequestDelete}
-            className="shrink-0 rounded-lg border border-[var(--line)] bg-white px-3 py-1.5 text-sm font-semibold text-[#b91c1c] transition hover:border-[#fecaca] hover:bg-[#fef2f2] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b91c1c] focus-visible:ring-offset-2"
+            className="shrink-0 rounded-lg border border-[var(--line)] bg-[var(--input)] px-3 py-1.5 text-sm font-semibold text-[var(--danger)] transition hover:border-[var(--danger-line)] hover:bg-[var(--danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)]"
           >
             Delete
           </button>
@@ -160,7 +160,7 @@ export function StudyBlockPanel({
               onChange={(e) =>
                 onChange({ ...block, startTimeValue: e.target.value })
               }
-              className="time-input mono w-full rounded-lg border border-[var(--line)] bg-white px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+              className="time-input mono w-full rounded-lg border border-[var(--line)] bg-[var(--input)] px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
 
@@ -176,7 +176,7 @@ export function StudyBlockPanel({
               onChange={(e) =>
                 handleQuestionCountChange(Number(e.target.value))
               }
-              className="mono h-[2.375rem] w-full rounded-lg border border-[var(--line)] bg-white px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+              className="mono h-[2.375rem] w-full rounded-lg border border-[var(--line)] bg-[var(--input)] px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
 
@@ -242,7 +242,7 @@ export function StudyBlockPanel({
                       startNumber: Math.max(0, Number(e.target.value) || 0),
                     })
                   }
-                  className="mono w-full rounded-md border border-[var(--line)] bg-white px-2 py-1.5 text-center text-sm font-medium text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
+                  className="mono w-full rounded-md border border-[var(--line)] bg-[var(--input)] px-2 py-1.5 text-center text-sm font-medium text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
                   aria-label="Starting question number"
                 />
               ) : (
@@ -263,7 +263,7 @@ export function StudyBlockPanel({
                 className={`mono justify-self-center rounded-md border px-2.5 py-1 text-center text-xs font-medium tabular-nums transition ${
                   row.finishedAt
                     ? 'border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]'
-                    : 'border-dashed border-[var(--line)] bg-white text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
+                    : 'border-dashed border-[var(--line)] bg-[var(--input)] text-[var(--muted)] hover:border-[var(--accent)] hover:text-[var(--accent)]'
                 }`}
               >
                 {row.finishedAt ? formatHHMM(row.finishedAt) : 'Tap when done'}

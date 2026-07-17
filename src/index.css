@@ -9,6 +9,42 @@
   --line: #d7e0ea;
   --accent: #1f6f8b;
   --accent-soft: #d6eef5;
+  --accent-contrast: #ffffff;
+  --input: #ffffff;
+  --danger: #b91c1c;
+  --danger-soft: #fef2f2;
+  --danger-line: #fecaca;
+  --ring-offset: #eef3f7;
+  --toast: #1a2332;
+  --bg-0: #eef3f7;
+  --bg-1: #e4ebf2;
+  --bg-glow-a: #c8e4ef;
+  --bg-glow-b: #e8f0e4;
+  --shell-inset: rgb(255 255 255 / 0.55);
+  --shell-shadow: rgb(26 35 50 / 0.45);
+}
+
+html.dark {
+  --ink: #e8eef4;
+  --muted: #9aabbd;
+  --surface: #1a2433;
+  --panel: #222e3f;
+  --line: #3a4b5f;
+  --accent: #5bb3ce;
+  --accent-soft: #163847;
+  --accent-contrast: #0b121a;
+  --input: #2a384c;
+  --danger: #f87171;
+  --danger-soft: #3a1f24;
+  --danger-line: #7f1d1d;
+  --ring-offset: #0f1620;
+  --toast: #0b121a;
+  --bg-0: #0f1620;
+  --bg-1: #121b27;
+  --bg-glow-a: #163040;
+  --bg-glow-b: #1a2a22;
+  --shell-inset: rgb(255 255 255 / 0.04);
+  --shell-shadow: rgb(0 0 0 / 0.55);
 }
 
 * {
@@ -21,9 +57,9 @@ body {
   font-family: 'IBM Plex Sans', sans-serif;
   color: var(--ink);
   background:
-    radial-gradient(ellipse 80% 50% at 10% -10%, #c8e4ef 0%, transparent 55%),
-    radial-gradient(ellipse 60% 40% at 100% 0%, #e8f0e4 0%, transparent 50%),
-    linear-gradient(180deg, #eef3f7 0%, #e4ebf2 100%);
+    radial-gradient(ellipse 80% 50% at 10% -10%, var(--bg-glow-a) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, var(--bg-glow-b) 0%, transparent 50%),
+    linear-gradient(180deg, var(--bg-0) 0%, var(--bg-1) 100%);
 }
 
 #root {
@@ -50,8 +86,8 @@ body {
     border-radius: 1.75rem;
     background: color-mix(in srgb, var(--panel) 72%, transparent);
     box-shadow:
-      0 0 0 1px rgb(255 255 255 / 0.55) inset,
-      0 28px 60px -32px rgb(26 35 50 / 0.45);
+      0 0 0 1px var(--shell-inset) inset,
+      0 28px 60px -32px var(--shell-shadow);
   }
 
   .app-shell-scroll {

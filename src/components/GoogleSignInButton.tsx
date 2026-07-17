@@ -12,7 +12,7 @@ export function GoogleSignInButton({
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="inline-flex items-center gap-3 rounded-lg border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--ink)] shadow-sm transition hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60"
+      className="inline-flex items-center gap-3 rounded-lg border border-[var(--line)] bg-[var(--input)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)] shadow-sm transition hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)] disabled:cursor-not-allowed disabled:opacity-60"
     >
       <GoogleMark />
       Continue with Google

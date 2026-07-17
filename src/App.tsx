@@ -4,6 +4,7 @@ import { AppHeader } from './components/AppHeader'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { GoogleSignInButton } from './components/GoogleSignInButton'
 import { StudyBlockPanel } from './components/StudyBlockPanel'
+import { ThemeModeMenu } from './components/ThemeModeMenu'
 import { UndoToast } from './components/UndoToast'
 import {
   createBlock,
@@ -13,6 +14,7 @@ import {
   updateBlock as persistBlock,
 } from './db/studyBlocks'
 import { useDebouncedById } from './hooks/useDebouncedById'
+import { useThemeMode } from './hooks/useThemeMode'
 import {
   signInWithGoogle,
   signOutUser,
@@ -35,6 +37,7 @@ type PendingDelete = {
 const UNDO_MS = 8000
 
 export default function App() {
+  const { mode: themeMode, setMode: setThemeMode } = useThemeMode()
   const [blocks, setBlocks] = useState<StudyBlock[]>([])
   const [session, setSession] = useState<SessionState>({ status: 'booting' })
   const [signingIn, setSigningIn] = useState(false)
@@ -240,7 +243,10 @@ export default function App() {
 
   if (session.status === 'signedOut') {
     return (
-      <div className="app-shell items-center justify-center gap-5 px-4 py-8 text-center">
+      <div className="app-shell relative items-center justify-center gap-5 px-4 py-8 text-center">
+        <div className="absolute right-4 top-4">
+          <ThemeModeMenu mode={themeMode} onChange={setThemeMode} />
+        </div>
         <div>
           <p className="text-sm font-medium tracking-wide text-[var(--accent)]">
             Study session
@@ -254,7 +260,7 @@ export default function App() {
         </div>
         <GoogleSignInButton onClick={() => void handleSignIn()} disabled={signingIn} />
         {signInError && (
-          <p className="text-sm text-red-600">{signInError}</p>
+          <p className="text-sm text-[var(--danger)]">{signInError}</p>
         )}
       </div>
     )
@@ -262,7 +268,10 @@ export default function App() {
 
   if (session.status === 'error') {
     return (
-      <div className="app-shell items-center justify-center gap-3 px-4 py-8 text-center">
+      <div className="app-shell relative items-center justify-center gap-3 px-4 py-8 text-center">
+        <div className="absolute right-4 top-4">
+          <ThemeModeMenu mode={themeMode} onChange={setThemeMode} />
+        </div>
         <h1 className="text-xl font-semibold text-[var(--ink)]">
           Could not load data
         </h1>
@@ -275,7 +284,7 @@ export default function App() {
           <button
             type="button"
             onClick={() => void handleSignOut()}
-            className="mt-2 rounded-lg border border-[var(--line)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--ink)]"
+            className="mt-2 rounded-lg border border-[var(--line)] bg-[var(--input)] px-4 py-2.5 text-sm font-semibold text-[var(--ink)]"
           >
             Sign out
           </button>
@@ -295,6 +304,8 @@ export default function App() {
           userName={user.displayName}
           userEmail={user.email}
           onSignOut={() => setConfirmSignOut(true)}
+          themeMode={themeMode}
+          onThemeModeChange={setThemeMode}
         />
 
         <div className="flex flex-col gap-5 pb-4">

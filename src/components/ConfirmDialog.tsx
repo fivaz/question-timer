@@ -24,12 +24,12 @@ export function ConfirmDialog({
 
   const confirmClass =
     tone === 'accent'
-      ? 'rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2'
-      : 'rounded-lg bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b91c1c] focus-visible:ring-offset-2'
+      ? 'rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)]'
+      : 'rounded-lg bg-[var(--danger)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--danger)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)]'
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-[rgba(26,35,50,0.45)] p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[color-mix(in_srgb,var(--ink)_45%,transparent)] p-4"
       role="presentation"
       onClick={onCancel}
     >
@@ -38,7 +38,7 @@ export function ConfirmDialog({
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby="confirm-dialog-message"
-        className="w-full max-w-sm rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_50px_-28px_rgba(26,35,50,0.45)]"
+        className="w-full max-w-sm rounded-2xl border border-[var(--line)] bg-[var(--panel)] p-5 shadow-[0_20px_50px_-28px_var(--shell-shadow)]"
         onClick={(e) => e.stopPropagation()}
       >
         <h2
@@ -57,7 +57,7 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onCancel}
-            className="rounded-lg border border-[var(--line)] bg-white px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2"
+            className="rounded-lg border border-[var(--line)] bg-[var(--input)] px-4 py-2 text-sm font-semibold text-[var(--ink)] transition hover:bg-[var(--surface)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)]"
           >
             {cancelLabel}
           </button>
