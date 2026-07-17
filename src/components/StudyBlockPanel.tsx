@@ -133,11 +133,19 @@ export function StudyBlockPanel({
   function skipQuestion(index: number) {
     const row = block.rows[index]
     if (!row || row.finishedAt || index >= block.rows.length - 1) return
-    const nextRows = [...block.rows]
-    const [skipped] = nextRows.splice(index, 1)
-    if (!skipped) return
-    nextRows.push(skipped)
-    onChange({ ...block, rows: nextRows })
+
+    // Move the row as-is so its question number (and finish time) stay attached.
+    const nextRows = [
+      ...block.rows.slice(0, index),
+      ...block.rows.slice(index + 1),
+      row,
+    ]
+
+    onChange({
+      ...block,
+      startNumber: nextRows[0]?.number ?? block.startNumber,
+      rows: nextRows,
+    })
   }
 
   return (
@@ -256,7 +264,7 @@ export function StudyBlockPanel({
 
           return (
             <li
-              key={index}
+              key={row.id}
               className={`grid grid-cols-[3.75rem_minmax(0,1fr)_3.75rem_2.75rem] items-center gap-2 px-4 py-2.5 sm:px-6 ${
                 isNext ? 'bg-[var(--accent-soft)]/40' : ''
               }`}

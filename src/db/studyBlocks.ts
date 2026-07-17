@@ -9,11 +9,12 @@ import {
   updateDoc,
 } from 'firebase/firestore'
 import { requireUser } from '../lib/auth'
-import { createStudyBlock } from '../lib/studyBlock'
+import { createId, createStudyBlock } from '../lib/studyBlock'
 import { getFirestoreDb } from '../lib/firebase'
 import type { QuestionRow, StudyBlock } from '../types'
 
 type StoredRow = {
+  id?: string
   number?: number
   finishedAt: string | null
 }
@@ -32,6 +33,7 @@ function blocksCollection(uid: string) {
 
 function serializeRows(rows: QuestionRow[]): StoredRow[] {
   return rows.map((row) => ({
+    id: row.id,
     number: row.number,
     finishedAt: row.finishedAt ? row.finishedAt.toISOString() : null,
   }))
@@ -43,6 +45,7 @@ function deserializeRows(
 ): QuestionRow[] {
   if (!rows) return []
   return rows.map((row, index) => ({
+    id: typeof row.id === 'string' && row.id ? row.id : createId(),
     number:
       typeof row.number === 'number' && Number.isFinite(row.number)
         ? row.number

@@ -1,4 +1,5 @@
 export type QuestionRow = {
+  id: string
   number: number
   finishedAt: Date | null
 }
