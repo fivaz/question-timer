@@ -40,6 +40,7 @@ export default function App() {
   const [signingIn, setSigningIn] = useState(false)
   const [signInError, setSignInError] = useState<string | null>(null)
   const [confirmBlockId, setConfirmBlockId] = useState<string | null>(null)
+  const [confirmSignOut, setConfirmSignOut] = useState(false)
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const exitPendingRef = useRef<PendingDelete | null>(null)
@@ -49,6 +50,7 @@ export default function App() {
       if (!user) {
         setBlocks([])
         setConfirmBlockId(null)
+        setConfirmSignOut(false)
         setPendingDelete(null)
         exitPendingRef.current = null
         setSession({ status: 'signedOut' })
@@ -127,6 +129,7 @@ export default function App() {
   }
 
   async function handleSignOut() {
+    setConfirmSignOut(false)
     clearUndoToast()
     try {
       await signOutUser()
@@ -291,7 +294,7 @@ export default function App() {
           onNewBlock={() => void startNewBlock()}
           userName={user.displayName}
           userEmail={user.email}
-          onSignOut={() => void handleSignOut()}
+          onSignOut={() => setConfirmSignOut(true)}
         />
 
         <div className="flex flex-col gap-5 pb-4">
@@ -320,6 +323,16 @@ export default function App() {
         confirmLabel="Delete"
         onConfirm={() => void confirmDelete()}
         onCancel={() => setConfirmBlockId(null)}
+      />
+
+      <ConfirmDialog
+        open={confirmSignOut}
+        title="Sign out?"
+        message="You will need to sign in with Google again to access your study blocks."
+        confirmLabel="Sign out"
+        tone="accent"
+        onConfirm={() => void handleSignOut()}
+        onCancel={() => setConfirmSignOut(false)}
       />
 
       {pendingDelete && (

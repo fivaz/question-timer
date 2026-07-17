@@ -4,6 +4,8 @@ type ConfirmDialogProps = {
   message: string
   confirmLabel?: string
   cancelLabel?: string
+  /** Defaults to danger (red). Use "accent" for non-destructive confirms like sign out. */
+  tone?: 'danger' | 'accent'
   onConfirm: () => void
   onCancel: () => void
 }
@@ -14,10 +16,16 @@ export function ConfirmDialog({
   message,
   confirmLabel = 'Delete',
   cancelLabel = 'Cancel',
+  tone = 'danger',
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
   if (!open) return null
+
+  const confirmClass =
+    tone === 'accent'
+      ? 'rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2'
+      : 'rounded-lg bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b91c1c] focus-visible:ring-offset-2'
 
   return (
     <div
@@ -56,7 +64,7 @@ export function ConfirmDialog({
           <button
             type="button"
             onClick={onConfirm}
-            className="rounded-lg bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#b91c1c] focus-visible:ring-offset-2"
+            className={confirmClass}
           >
             {confirmLabel}
           </button>
