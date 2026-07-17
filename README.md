@@ -5,8 +5,8 @@ Track how long you spend on each question during a study or exam session.
 ## Setup
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 ## Usage
