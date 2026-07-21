@@ -33,6 +33,9 @@ import { TrendArrow } from './TrendArrow'
 const ROW_GRID =
   'grid grid-cols-[1.75rem_3.5rem_minmax(0,1fr)_3.5rem_2.75rem] items-center gap-1.5 px-3 py-2.5 sm:gap-2 sm:px-5'
 
+function digitsOnly(value: string): string {
+  return value.replace(/\D/g, '')
+}
 
 type StudyBlockPanelProps = {
   block: StudyBlock
@@ -54,6 +57,9 @@ export function StudyBlockPanel({
     null,
   )
   const [finishedDraft, setFinishedDraft] = useState('')
+  const [questionCountDraft, setQuestionCountDraft] = useState<string | null>(
+    null,
+  )
 
   blockRef.current = block
 
@@ -367,13 +373,22 @@ export function StudyBlockPanel({
               Questions
             </span>
             <input
-              type="number"
-              min={1}
-              max={200}
-              value={block.questionCount}
-              onChange={(e) =>
-                handleQuestionCountChange(Number(e.target.value))
-              }
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              autoComplete="off"
+              value={questionCountDraft ?? String(block.questionCount)}
+              onFocus={() => setQuestionCountDraft(String(block.questionCount))}
+              onChange={(e) => setQuestionCountDraft(digitsOnly(e.target.value))}
+              onBlur={() => {
+                const draft = questionCountDraft
+                setQuestionCountDraft(null)
+                if (draft === null || draft === '') return
+                handleQuestionCountChange(Number(draft))
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') e.currentTarget.blur()
+              }}
               className="mono h-[2.375rem] w-full rounded-lg border border-[var(--line)] bg-[var(--input)] px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>
@@ -521,6 +536,8 @@ function SortableQuestionRow({
     disabled: dragDisabled,
   })
 
+  const [numberDraft, setNumberDraft] = useState<string | null>(null)
+
   const style: CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -551,9 +568,22 @@ function SortableQuestionRow({
       </button>
 
       <input
-        type="number"
-        value={row.number}
-        onChange={(e) => onNumberChange(Number(e.target.value) || 0)}
+        type="text"
+        inputMode="numeric"
+        pattern="[0-9]*"
+        autoComplete="off"
+        value={numberDraft ?? String(row.number)}
+        onFocus={() => setNumberDraft(String(row.number))}
+        onChange={(e) => setNumberDraft(digitsOnly(e.target.value))}
+        onBlur={() => {
+          const draft = numberDraft
+          setNumberDraft(null)
+          if (draft === null || draft === '') return
+          onNumberChange(Number(draft))
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') e.currentTarget.blur()
+        }}
         className="mono w-full rounded-md border border-[var(--line)] bg-[var(--input)] px-2 py-1.5 text-center text-sm font-medium text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
         aria-label={`Question number ${row.number}`}
       />
