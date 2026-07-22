@@ -1,12 +1,13 @@
 import {
   collection,
   doc,
-  getDocs,
+  onSnapshot,
   orderBy,
   query,
   serverTimestamp,
   setDoc,
   updateDoc,
+  type Unsubscribe,
 } from 'firebase/firestore'
 import { requireUser } from '../lib/auth'
 import { createId, createStudyBlock } from '../lib/studyBlock'
@@ -58,27 +59,50 @@ function isSoftDeleted(data: StudyBlockDoc): boolean {
   return data.deletedAt != null
 }
 
-export async function listBlocks(): Promise<StudyBlock[]> {
+function docToBlock(
+  id: string,
+  data: StudyBlockDoc,
+): StudyBlock | null {
+  if (isSoftDeleted(data)) return null
+  return {
+    id,
+    startTimeValue: data.startTimeValue,
+    questionCount: data.questionCount,
+    startNumber: data.startNumber,
+    rows: deserializeRows(data.rows, data.startNumber),
+    animateEntrance: false,
+    animateExit: false,
+  }
+}
+
+/**
+ * Live study-block list via Firestore onSnapshot.
+ * Soft-deleted docs are omitted; callers should treat this as source of truth.
+ */
+export function subscribeToBlocks(
+  onChange: (blocks: StudyBlock[]) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
   const user = requireUser()
-  const snapshot = await getDocs(
-    query(blocksCollection(user.uid), orderBy('createdAt', 'desc')),
+  const blocksQuery = query(
+    blocksCollection(user.uid),
+    orderBy('createdAt', 'desc'),
   )
 
-  return snapshot.docs
-    .map((document): StudyBlock | null => {
-      const data = document.data() as StudyBlockDoc
-      if (isSoftDeleted(data)) return null
-      return {
-        id: document.id,
-        startTimeValue: data.startTimeValue,
-        questionCount: data.questionCount,
-        startNumber: data.startNumber,
-        rows: deserializeRows(data.rows, data.startNumber),
-        animateEntrance: false,
-        animateExit: false,
-      }
-    })
-    .filter((block): block is StudyBlock => block !== null)
+  return onSnapshot(
+    blocksQuery,
+    (snapshot) => {
+      const blocks = snapshot.docs
+        .map((document) =>
+          docToBlock(document.id, document.data() as StudyBlockDoc),
+        )
+        .filter((block): block is StudyBlock => block !== null)
+      onChange(blocks)
+    },
+    (error) => {
+      onError?.(error)
+    },
+  )
 }
 
 export async function createBlock(animateEntrance = false): Promise<StudyBlock> {
@@ -112,7 +136,7 @@ export async function updateBlock(block: StudyBlock): Promise<void> {
   })
 }
 
-/** Soft-delete: sets deletedAt so the block is hidden from listBlocks. */
+/** Soft-delete: sets deletedAt so the block is hidden from subscribeToBlocks. */
 export async function softDeleteBlock(blockId: string): Promise<void> {
   const user = requireUser()
   const ref = doc(blocksCollection(user.uid), blockId)
@@ -123,7 +147,7 @@ export async function softDeleteBlock(blockId: string): Promise<void> {
   })
 }
 
-/** Clears deletedAt so the block appears in listBlocks again. */
+/** Clears deletedAt so the block appears in subscribeToBlocks again. */
 export async function restoreBlock(blockId: string): Promise<void> {
   const user = requireUser()
   const ref = doc(blocksCollection(user.uid), blockId)

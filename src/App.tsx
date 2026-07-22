@@ -8,9 +8,9 @@ import { ThemeModeMenu } from './components/ThemeModeMenu'
 import { UndoToast } from './components/UndoToast'
 import {
   createBlock,
-  listBlocks,
   restoreBlock,
   softDeleteBlock,
+  subscribeToBlocks,
   updateBlock as persistBlock,
 } from './db/studyBlocks'
 import { useDebouncedById } from './hooks/useDebouncedById'
@@ -36,6 +36,48 @@ type PendingDelete = {
 
 const UNDO_MS = 8000
 
+/** Merge Firestore snapshot with local UI state (dirty edits + exit animations). */
+function mergeRemoteBlocks(
+  prev: StudyBlock[],
+  remote: StudyBlock[],
+  dirtyIds: Set<string>,
+): StudyBlock[] {
+  const prevById = new Map(prev.map((block) => [block.id, block]))
+  const remoteIds = new Set(remote.map((block) => block.id))
+
+  const merged = remote.map((remoteBlock) => {
+    const local = prevById.get(remoteBlock.id)
+    if (dirtyIds.has(remoteBlock.id) && local) {
+      return local
+    }
+    return {
+      ...remoteBlock,
+      animateEntrance: local?.animateEntrance ?? false,
+      animateExit: local?.animateExit ?? false,
+    }
+  })
+
+  for (const local of prev) {
+    if (!local.animateExit || remoteIds.has(local.id)) continue
+
+    const prevIndex = prev.findIndex((block) => block.id === local.id)
+    let insertAt = 0
+    for (let i = prevIndex - 1; i >= 0; i--) {
+      const neighborId = prev[i]!.id
+      const at = merged.findIndex((block) => block.id === neighborId)
+      if (at >= 0) {
+        insertAt = at + 1
+        break
+      }
+    }
+    if (!merged.some((block) => block.id === local.id)) {
+      merged.splice(insertAt, 0, local)
+    }
+  }
+
+  return merged
+}
+
 export default function App() {
   const { mode: themeMode, setMode: setThemeMode } = useThemeMode()
   const [blocks, setBlocks] = useState<StudyBlock[]>([])
@@ -47,6 +89,8 @@ export default function App() {
   const [pendingDelete, setPendingDelete] = useState<PendingDelete | null>(null)
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const exitPendingRef = useRef<PendingDelete | null>(null)
+  const dirtyIdsRef = useRef(new Set<string>())
+  const seedRequestedRef = useRef(false)
 
   useEffect(() => {
     return subscribeToAuth((user) => {
@@ -56,42 +100,64 @@ export default function App() {
         setConfirmSignOut(false)
         setPendingDelete(null)
         exitPendingRef.current = null
+        dirtyIdsRef.current.clear()
+        seedRequestedRef.current = false
         setSession({ status: 'signedOut' })
         return
       }
+      seedRequestedRef.current = false
       setSession({ status: 'loading', user })
     })
   }, [])
 
+  const syncUserId =
+    session.status === 'loading' || session.status === 'ready'
+      ? session.user.uid
+      : null
+
   useEffect(() => {
-    if (session.status !== 'loading') return
+    if (!syncUserId) return
 
     let cancelled = false
-    const { user } = session
 
-    async function loadBlocks() {
-      try {
-        let next = await listBlocks()
-        if (next.length === 0) {
-          const seed = await createBlock(false)
-          next = [seed]
-        }
-        if (!cancelled) {
-          setBlocks(next)
-          setSession({ status: 'ready', user })
-        }
-      } catch (error) {
-        const message =
-          error instanceof Error ? error.message : 'Failed to load study blocks'
-        if (!cancelled) setSession({ status: 'error', message, user })
-      }
-    }
+    const unsubscribe = subscribeToBlocks(
+      (remoteBlocks) => {
+        if (cancelled) return
 
-    void loadBlocks()
+        if (remoteBlocks.length === 0 && !seedRequestedRef.current) {
+          seedRequestedRef.current = true
+          void createBlock(false).catch((error) => {
+            seedRequestedRef.current = false
+            console.warn('Failed to seed study block', error)
+          })
+        }
+
+        setBlocks((prev) =>
+          mergeRemoteBlocks(prev, remoteBlocks, dirtyIdsRef.current),
+        )
+        setSession((current) => {
+          if (current.status !== 'loading') return current
+          return { status: 'ready', user: current.user }
+        })
+      },
+      (error) => {
+        if (cancelled) return
+        setSession((current) => ({
+          status: 'error',
+          message: error.message || 'Failed to sync study blocks',
+          user:
+            current.status === 'loading' || current.status === 'ready'
+              ? current.user
+              : null,
+        }))
+      },
+    )
+
     return () => {
       cancelled = true
+      unsubscribe()
     }
-  }, [session])
+  }, [syncUserId])
 
   useEffect(() => {
     return () => {
@@ -99,9 +165,10 @@ export default function App() {
     }
   }, [])
 
-  const saveBlock = useCallback(async (_id: string, block: StudyBlock) => {
+  const saveBlock = useCallback(async (id: string, block: StudyBlock) => {
     try {
       await persistBlock(block)
+      dirtyIdsRef.current.delete(id)
     } catch (error) {
       console.warn('Failed to save study block', error)
     }
@@ -144,13 +211,16 @@ export default function App() {
   async function startNewBlock() {
     try {
       const block = await createBlock(true)
-      setBlocks((prev) => [block, ...prev])
+      setBlocks((prev) =>
+        prev.some((item) => item.id === block.id) ? prev : [block, ...prev],
+      )
     } catch (error) {
       console.warn('Failed to create study block', error)
     }
   }
 
   function handleBlockChange(id: string, next: StudyBlock) {
+    dirtyIdsRef.current.add(id)
     setBlocks((prev) => prev.map((block) => (block.id === id ? next : block)))
     debouncedPersist(id, next)
   }
