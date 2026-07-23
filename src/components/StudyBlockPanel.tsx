@@ -23,7 +23,6 @@ import {
   applyTimeToDate,
   formatDuration,
   formatHHMM,
-  parseTimeInput,
   toTimeInputValue,
 } from '../lib/time'
 import { getTrend } from '../lib/trend'
@@ -90,20 +89,17 @@ export function StudyBlockPanel({
     return () => node.removeEventListener('animationend', handleEnd)
   }, [block.animateExit, onExitComplete])
 
-  const startDate = useMemo(
-    () => parseTimeInput(block.startTimeValue),
-    [block.startTimeValue],
-  )
-
   const durations = useMemo(() => {
     return block.rows.map((row, index) => {
-      if (!row.finishedAt || !startDate) return null
+      if (!row.finishedAt) return null
       const prev =
-        index === 0 ? startDate : (block.rows[index - 1]?.finishedAt ?? null)
+        index === 0
+          ? block.startedAt
+          : (block.rows[index - 1]?.finishedAt ?? null)
       if (!prev) return null
       return (row.finishedAt.getTime() - prev.getTime()) / 1000
     })
-  }, [block.rows, startDate])
+  }, [block.rows, block.startedAt])
 
   const answeredCount = durations.filter((d) => d !== null).length
 
@@ -361,9 +357,16 @@ export function StudyBlockPanel({
             <input
               type="time"
               value={block.startTimeValue}
-              onChange={(e) =>
-                onChange({ ...block, startTimeValue: e.target.value })
-              }
+              onChange={(e) => {
+                const value = e.target.value
+                const nextStartedAt =
+                  applyTimeToDate(block.startedAt, value) ?? block.startedAt
+                onChange({
+                  ...block,
+                  startTimeValue: value,
+                  startedAt: nextStartedAt,
+                })
+              }}
               className="time-input mono w-full rounded-lg border border-[var(--line)] bg-[var(--input)] px-1.5 text-center text-sm text-[var(--ink)] outline-none ring-[var(--accent)] focus:ring-2"
             />
           </label>

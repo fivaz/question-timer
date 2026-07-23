@@ -7,6 +7,8 @@ export type QuestionRow = {
 export type StudyBlock = {
   id: string
   startTimeValue: string
+  /** Full start timestamp; used for Q1 duration (calendar day preserved across days). */
+  startedAt: Date
   questionCount: number
   startNumber: number
   rows: QuestionRow[]

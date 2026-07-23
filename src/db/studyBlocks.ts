@@ -7,11 +7,13 @@ import {
   serverTimestamp,
   setDoc,
   updateDoc,
+  type Timestamp,
   type Unsubscribe,
 } from 'firebase/firestore'
 import { requireUser } from '../lib/auth'
 import { createId, createStudyBlock } from '../lib/studyBlock'
 import { getFirestoreDb } from '../lib/firebase'
+import { applyTimeToDate, parseTimeInput } from '../lib/time'
 import type { QuestionRow, StudyBlock } from '../types'
 
 type StoredRow = {
@@ -22,9 +24,12 @@ type StoredRow = {
 
 type StudyBlockDoc = {
   startTimeValue: string
+  /** ISO string when present; legacy docs omit this. */
+  startedAt?: string
   questionCount: number
   startNumber: number
   rows: StoredRow[]
+  createdAt?: Timestamp | null
   deletedAt?: unknown | null
 }
 
@@ -59,6 +64,28 @@ function isSoftDeleted(data: StudyBlockDoc): boolean {
   return data.deletedAt != null
 }
 
+/**
+ * Prefer stored startedAt; for legacy docs, apply startTimeValue onto createdAt
+ * so Q1 duration keeps the real calendar day. Last resort: today + HH:MM.
+ */
+function resolveStartedAt(data: StudyBlockDoc): Date {
+  if (typeof data.startedAt === 'string' && data.startedAt) {
+    const parsed = new Date(data.startedAt)
+    if (!Number.isNaN(parsed.getTime())) return parsed
+  }
+
+  const createdAt =
+    data.createdAt && typeof data.createdAt.toDate === 'function'
+      ? data.createdAt.toDate()
+      : null
+  if (createdAt) {
+    const applied = applyTimeToDate(createdAt, data.startTimeValue)
+    if (applied) return applied
+  }
+
+  return parseTimeInput(data.startTimeValue) ?? new Date()
+}
+
 function docToBlock(
   id: string,
   data: StudyBlockDoc,
@@ -67,6 +94,7 @@ function docToBlock(
   return {
     id,
     startTimeValue: data.startTimeValue,
+    startedAt: resolveStartedAt(data),
     questionCount: data.questionCount,
     startNumber: data.startNumber,
     rows: deserializeRows(data.rows, data.startNumber),
@@ -112,6 +140,7 @@ export async function createBlock(animateEntrance = false): Promise<StudyBlock> 
 
   await setDoc(ref, {
     startTimeValue: block.startTimeValue,
+    startedAt: block.startedAt.toISOString(),
     questionCount: block.questionCount,
     startNumber: block.startNumber,
     rows: serializeRows(block.rows),
@@ -129,6 +158,7 @@ export async function updateBlock(block: StudyBlock): Promise<void> {
 
   await updateDoc(ref, {
     startTimeValue: block.startTimeValue,
+    startedAt: block.startedAt.toISOString(),
     questionCount: block.questionCount,
     startNumber: block.startNumber,
     rows: serializeRows(block.rows),

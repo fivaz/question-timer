@@ -25,9 +25,11 @@ export function createRows(count: number, startNumber = 1): QuestionRow[] {
 }
 
 export function createStudyBlock(animateEntrance = false): StudyBlock {
+  const startedAt = new Date()
   return {
     id: createId(),
-    startTimeValue: toTimeInputValue(new Date()),
+    startTimeValue: toTimeInputValue(startedAt),
+    startedAt,
     questionCount: 10,
     startNumber: 1,
     rows: createRows(10, 1),
