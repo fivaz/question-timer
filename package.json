@@ -1,9 +1,9 @@
 {
   "name": "question-timer",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
-	"packageManager": "pnpm@10.28.0",
+  "packageManager": "pnpm@10.28.0",
   "scripts": {
     "dev": "vite",
     "dev:network": "vite --host --open",
@@ -33,7 +33,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.3",
-		"conventional-changelog-conventionalcommits": "^9.1.0",
+    "conventional-changelog-conventionalcommits": "^9.1.0",
     "oxlint": "^1.71.0",
     "semantic-release": "^25.0.8",
     "sharp": "^0.35.3",
