@@ -1,0 +1,40 @@
+# Use a custom Docker image for the 'ubuntu-latest' runner.
+# '-P' stands for "platform". Whenever a workflow requests 'ubuntu-latest',
+# act will use the image below.
+# larger image
+#-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:full-latest
+# smaller image
+-P ubuntu-latest=ghcr.io/catthehacker/ubuntu:act-latest
+
+# Add extra Linux capabilities to the container.
+# 'SYS_ADMIN' allows some privileged operations (needed for certain builds, mounts, or tools).
+--container-options "--cap-add=SYS_ADMIN"
+
+# Force the container to run as amd64 architecture.
+# Useful if your host is ARM (like M1/M2 Mac) but workflows expect x86_64 binaries.
+# --container-architecture linux/amd64
+
+# Load an intentionally empty env file instead of act's default .env.
+# This keeps workflow env values, such as DATABASE_URL, in control locally.
+--env-file .github/act/e2e.env
+
+# Set an environment variable inside the container.
+# DRY_RUN=1 is used because in the release.yml I check this env key
+# to decide whether to run semantic-release in dry mode.
+--env DRY_RUN=1
+
+# Set the Git reference inside the container.
+# This tells act which branch it should simulate the workflow for.
+--env GITHUB_REF=refs/heads/main
+
+# Load secrets from a local file (key=value format) to use in the workflow.
+# This mimics GitHub Secrets when running locally.
+--secret-file .secrets
+
+# Reuse the same container for multiple runs if possible.
+# Speeds up repeated workflow executions because it doesn’t destroy the container each time.
+--reuse=false
+
+# Enable caching of dependencies inside the container.
+# Stores cache in '.act-cache' locally, so next runs don’t have to reinstall everything.
+--cache-server-path .act-cache
