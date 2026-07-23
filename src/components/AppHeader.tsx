@@ -1,22 +1,17 @@
-import { ThemeModeMenu } from './ThemeModeMenu'
-import type { ThemeMode } from '../lib/theme'
-
 type AppHeaderProps = {
   onNewBlock: () => void
+  onOpenConfig: () => void
   userName: string | null
   userEmail: string | null
   onSignOut: () => void
-  themeMode: ThemeMode
-  onThemeModeChange: (mode: ThemeMode) => void
 }
 
 export function AppHeader({
   onNewBlock,
+  onOpenConfig,
   userName,
   userEmail,
   onSignOut,
-  themeMode,
-  onThemeModeChange,
 }: AppHeaderProps) {
   return (
     <header className="mb-5 flex flex-col gap-4">
@@ -26,7 +21,15 @@ export function AppHeader({
             Study session
           </p>
           <div className="flex items-center gap-0.5">
-            <ThemeModeMenu mode={themeMode} onChange={onThemeModeChange} />
+            <button
+              type="button"
+              onClick={onOpenConfig}
+              className="inline-flex size-8 items-center justify-center rounded-lg text-[var(--muted)] transition hover:bg-[var(--surface)] hover:text-[var(--ink)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--ring-offset)]"
+              aria-label="Settings"
+              title="Settings"
+            >
+              <SettingsIcon />
+            </button>
             <button
               type="button"
               onClick={onSignOut}
@@ -79,6 +82,32 @@ function PlusIcon() {
         stroke="currentColor"
         strokeWidth="2"
         strokeLinecap="round"
+      />
+    </svg>
+  )
+}
+
+function SettingsIcon() {
+  return (
+    <svg
+      width="18"
+      height="18"
+      viewBox="0 0 24 24"
+      fill="none"
+      aria-hidden
+      className="shrink-0"
+    >
+      <path
+        d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+      />
+      <path
+        d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852 1 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"
+        stroke="currentColor"
+        strokeWidth="1.75"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   )

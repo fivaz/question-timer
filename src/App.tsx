@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { User } from 'firebase/auth'
 import { AppHeader } from './components/AppHeader'
+import { ConfigDrawer } from './components/ConfigDrawer'
 import { ConfirmDialog } from './components/ConfirmDialog'
 import { GoogleSignInButton } from './components/GoogleSignInButton'
 import { StudyBlockPanel } from './components/StudyBlockPanel'
@@ -20,6 +21,10 @@ import {
   signOutUser,
   subscribeToAuth,
 } from './lib/auth'
+import {
+  getDefaultQuestionCount,
+  setDefaultQuestionCount,
+} from './lib/preferences'
 import type { StudyBlock } from './types'
 
 type SessionState =
@@ -80,6 +85,10 @@ function mergeRemoteBlocks(
 
 export default function App() {
   const { mode: themeMode, setMode: setThemeMode } = useThemeMode()
+  const [defaultQuestionCount, setDefaultQuestionCountState] = useState(() =>
+    getDefaultQuestionCount(),
+  )
+  const [configOpen, setConfigOpen] = useState(false)
   const [blocks, setBlocks] = useState<StudyBlock[]>([])
   const [session, setSession] = useState<SessionState>({ status: 'booting' })
   const [signingIn, setSigningIn] = useState(false)
@@ -98,6 +107,7 @@ export default function App() {
         setBlocks([])
         setConfirmBlockId(null)
         setConfirmSignOut(false)
+        setConfigOpen(false)
         setPendingDelete(null)
         exitPendingRef.current = null
         dirtyIdsRef.current.clear()
@@ -217,6 +227,10 @@ export default function App() {
     } catch (error) {
       console.warn('Failed to create study block', error)
     }
+  }
+
+  function handleDefaultQuestionCountChange(count: number) {
+    setDefaultQuestionCountState(setDefaultQuestionCount(count))
   }
 
   function handleBlockChange(id: string, next: StudyBlock) {
@@ -371,11 +385,10 @@ export default function App() {
       <div className="app-shell-scroll flex flex-col px-4 py-6">
         <AppHeader
           onNewBlock={() => void startNewBlock()}
+          onOpenConfig={() => setConfigOpen(true)}
           userName={user.displayName}
           userEmail={user.email}
           onSignOut={() => setConfirmSignOut(true)}
-          themeMode={themeMode}
-          onThemeModeChange={setThemeMode}
         />
 
         <div className="flex flex-col gap-5 pb-4">
@@ -392,6 +405,15 @@ export default function App() {
           ))}
         </div>
       </div>
+
+      <ConfigDrawer
+        open={configOpen}
+        onClose={() => setConfigOpen(false)}
+        defaultQuestionCount={defaultQuestionCount}
+        onDefaultQuestionCountChange={handleDefaultQuestionCountChange}
+        themeMode={themeMode}
+        onThemeModeChange={setThemeMode}
+      />
 
       <ConfirmDialog
         open={confirmBlockId !== null}

@@ -1,4 +1,5 @@
 import type { QuestionRow, StudyBlock } from '../types'
+import { getDefaultQuestionCount } from './preferences'
 import { toTimeInputValue } from './time'
 
 /** Prefer randomUUID; fall back when not in a secure context (e.g. LAN http://192.168.x.x). */
@@ -26,13 +27,14 @@ export function createRows(count: number, startNumber = 1): QuestionRow[] {
 
 export function createStudyBlock(animateEntrance = false): StudyBlock {
   const startedAt = new Date()
+  const questionCount = getDefaultQuestionCount()
   return {
     id: createId(),
     startTimeValue: toTimeInputValue(startedAt),
     startedAt,
-    questionCount: 10,
+    questionCount,
     startNumber: 1,
-    rows: createRows(10, 1),
+    rows: createRows(questionCount, 1),
     animateEntrance,
     animateExit: false,
   }
