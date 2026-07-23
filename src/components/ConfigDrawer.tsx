@@ -63,7 +63,7 @@ export function ConfigDrawer({
 
   return (
     <div
-      className="absolute inset-0 z-50 flex items-end bg-[color-mix(in_srgb,var(--ink)_45%,transparent)]"
+      className="fixed inset-0 z-50 flex items-end justify-center bg-[color-mix(in_srgb,var(--ink)_45%,transparent)]"
       role="presentation"
       onClick={onClose}
     >
@@ -71,7 +71,7 @@ export function ConfigDrawer({
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="config-drawer-sheet w-full rounded-t-2xl border border-b-0 border-[var(--line)] bg-[var(--panel)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-20px_50px_-28px_var(--shell-shadow)]"
+        className="config-drawer-sheet w-full max-w-[26.875rem] rounded-t-2xl border border-b-0 border-[var(--line)] bg-[var(--panel)] px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-3 shadow-[0_-20px_50px_-28px_var(--shell-shadow)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[var(--line)]" aria-hidden />
