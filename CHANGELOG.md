@@ -1,3 +1,9 @@
+## [1.1.1](https://github.com/fivaz/question-timer/compare/v1.1.0...v1.1.1) (2026-07-24)
+
+### 🧹 Chores
+
+* show app version at bottom of settings drawer ([d52e2fb](https://github.com/fivaz/question-timer/commit/d52e2fba94a369b02d4a05c2fa5a5ed0ffb9feaa))
+
 ## [1.1.0](https://github.com/fivaz/question-timer/compare/v1.0.0...v1.1.0) (2026-07-24)
 
 ### ✨ Features
