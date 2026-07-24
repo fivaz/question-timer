@@ -163,6 +163,10 @@ export function ConfigDrawer({
             </div>
           </fieldset>
         </div>
+
+        <p className="mt-6 text-center text-xs text-[var(--muted)]">
+          Version {__APP_VERSION__}
+        </p>
       </div>
     </div>
   )
