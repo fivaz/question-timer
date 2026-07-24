@@ -81,6 +81,11 @@ body {
 @media (min-width: 30rem) {
   .app-shell {
     margin-block: 1rem;
+    /* Cap height so the shell stays viewport-sized; without this it grows
+       with content and .app-shell-scroll never overflows (inner scroll dies,
+       and overscroll-behavior: contain also blocks document scroll). */
+    height: calc(100svh - 2rem);
+    max-height: calc(100svh - 2rem);
     min-height: calc(100svh - 2rem);
     overflow: hidden;
     border: 1px solid var(--line);
@@ -93,6 +98,7 @@ body {
 
   .app-shell-scroll {
     flex: 1;
+    min-height: 0; /* allow flex child to shrink so overflow-y can activate */
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
