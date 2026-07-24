@@ -221,8 +221,9 @@ export default function App() {
 
   async function startNewBlock() {
     try {
-      // Newest block is first; continue numbering after its highest finished #.
-      const startNumber = nextStartNumberFromPrevious(blocks[0])
+      // Newest active block first; skip soft-deleted rows still animating out.
+      const previous = blocks.find((block) => !block.animateExit)
+      const startNumber = nextStartNumberFromPrevious(previous)
       const block = await createBlock(true, startNumber)
       setBlocks((prev) =>
         prev.some((item) => item.id === block.id) ? prev : [block, ...prev],
