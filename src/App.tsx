@@ -25,6 +25,7 @@ import {
   getDefaultQuestionCount,
   setDefaultQuestionCount,
 } from './lib/preferences'
+import { nextStartNumberFromPrevious } from './lib/studyBlock'
 import type { StudyBlock } from './types'
 
 type SessionState =
@@ -220,7 +221,9 @@ export default function App() {
 
   async function startNewBlock() {
     try {
-      const block = await createBlock(true)
+      // Newest block is first; continue numbering after its highest finished #.
+      const startNumber = nextStartNumberFromPrevious(blocks[0])
+      const block = await createBlock(true, startNumber)
       setBlocks((prev) =>
         prev.some((item) => item.id === block.id) ? prev : [block, ...prev],
       )

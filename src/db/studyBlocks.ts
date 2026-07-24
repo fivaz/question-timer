@@ -133,9 +133,12 @@ export function subscribeToBlocks(
   )
 }
 
-export async function createBlock(animateEntrance = false): Promise<StudyBlock> {
+export async function createBlock(
+  animateEntrance = false,
+  startNumber = 1,
+): Promise<StudyBlock> {
   const user = requireUser()
-  const block = createStudyBlock(animateEntrance)
+  const block = createStudyBlock(animateEntrance, startNumber)
   const ref = doc(blocksCollection(user.uid), block.id)
 
   await setDoc(ref, {

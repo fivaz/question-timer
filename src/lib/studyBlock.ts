@@ -25,7 +25,26 @@ export function createRows(count: number, startNumber = 1): QuestionRow[] {
   }))
 }
 
-export function createStudyBlock(animateEntrance = false): StudyBlock {
+/** Next block starts after the previous block's highest finished question #. */
+export function nextStartNumberFromPrevious(
+  previous: StudyBlock | null | undefined,
+): number {
+  if (!previous) return 1
+
+  let maxFinished = 0
+  for (const row of previous.rows) {
+    if (row.finishedAt !== null && row.number > maxFinished) {
+      maxFinished = row.number
+    }
+  }
+
+  return maxFinished > 0 ? maxFinished + 1 : 1
+}
+
+export function createStudyBlock(
+  animateEntrance = false,
+  startNumber = 1,
+): StudyBlock {
   const startedAt = new Date()
   const questionCount = getDefaultQuestionCount()
   return {
@@ -33,8 +52,8 @@ export function createStudyBlock(animateEntrance = false): StudyBlock {
     startTimeValue: toTimeInputValue(startedAt),
     startedAt,
     questionCount,
-    startNumber: 1,
-    rows: createRows(questionCount, 1),
+    startNumber,
+    rows: createRows(questionCount, startNumber),
     animateEntrance,
     animateExit: false,
   }
