@@ -1,3 +1,14 @@
+## [1.1.0](https://github.com/fivaz/question-timer/compare/v1.0.0...v1.1.0) (2026-07-24)
+
+### ✨ Features
+
+* continue question numbers from previous block's last finished ([18cf579](https://github.com/fivaz/question-timer/commit/18cf579134d611e85bfd9078acc7ba61e1d4e6fe))
+
+### 🐛 Bug Fixes
+
+* allow scrolling inside desktop phone shell ([8b3328e](https://github.com/fivaz/question-timer/commit/8b3328e0d200720e397ffbd445c7786f7a673ad3))
+* ignore exiting blocks when picking next start number ([62bcb78](https://github.com/fivaz/question-timer/commit/62bcb785831eb55f725bcc62f0ecba3ac3bd169c))
+
 ## 1.0.0 (2026-07-23)
 
 ### ✨ Features
